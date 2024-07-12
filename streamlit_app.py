@@ -578,7 +578,7 @@ def main():
     
     col1, col2, col3 = st.columns([1,2,1])
     with col1:
-            st.markdown("[RE Journal Website](https://www.rejournal.in/)", unsafe_allow_html=True)
+        st.link_button("RE Journal Website", "https://www.rejournal.in/")
         
     col1, col2, col3 = st.columns(3)
     with col1:
