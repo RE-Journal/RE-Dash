@@ -2,56 +2,72 @@ import mysql.connector
 from mysql.connector import Error
 import pandas as pd
 
+def get_db_connection():
+    return mysql.connector.connect(
+        host='193.203.184.1',
+        user='u661384233_dbuser',
+        password='Rejournal@123',
+        database='u661384233_rejournal'
+    )
 
 
-def get_lease_start_rent_by_submarket(selected_quarters):
+def get_tenant_origin_share_data():
     try:
-        connection = mysql.connector.connect(
-            host='193.203.184.1',
-            user='u661384233_dbuser',
-            password='Rejournal@123',
-            database='u661384233_rejournal'
-        )
+        connection = get_db_connection()
         if connection.is_connected():
-            # First, let's get the column names
-            cursor = connection.cursor()
-            cursor.execute("DESCRIBE leases")
-            columns = [column[0] for column in cursor.fetchall()]
-            cursor.close()
-
-            # Find the column that likely represents the lease start rent
-            rent_column = next((col for col in columns if 'rent' in col.lower() and 'start' in col.lower()), None)
-
-            if not rent_column:
-                print("Could not find a suitable column for lease start rent.")
-                return []
-
-            quarters_condition = "AND CONCAT(lease_start_year, ' Q', lease_start_qtr) IN ({})".format(
-                ','.join(['%s'] * len(selected_quarters))
-            ) if selected_quarters else ""
-            
-            query = f"""
+            query = """
             SELECT 
-                CONCAT(lease_start_year, ' Q', lease_start_qtr) AS Quarter,
-                COALESCE(submarket, 'Unknown') AS SUBMARKET,
-                AVG({rent_column}) AS Average_Rent
+                tenant_origin_continent AS Tenant_Origin,
+                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
             FROM leases
-            WHERE {rent_column} IS NOT NULL
-                AND lease_start_year IS NOT NULL
-                AND lease_start_qtr IS NOT NULL
-                AND submarket IS NOT NULL
-                {quarters_condition}
-            GROUP BY lease_start_year, lease_start_qtr, submarket
-            ORDER BY lease_start_year, lease_start_qtr, SUBMARKET
+            WHERE lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+                AND tenant_origin_continent IS NOT NULL AND tenant_origin_continent != ''
+            GROUP BY tenant_origin_continent
+            ORDER BY Area_Leased_Mln_Sqft DESC
             """
             
-            df = pd.read_sql(query, connection, params=selected_quarters)
+            df = pd.read_sql(query, connection)
             
             if df.empty:
                 print("No data returned from the query.")
                 return []
             
-            df['Average_Rent'] = df['Average_Rent'].round(2)
+            total_area = df['Area_Leased_Mln_Sqft'].sum()
+            df['Percentage'] = (df['Area_Leased_Mln_Sqft'] / total_area * 100).round(2)
+            
+            return df.to_dict('records')
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+            
+def get_area_tenant_sector_share_data():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                tenant_sector AS Tenant_Sector,
+                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
+            FROM leases
+            WHERE lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+                AND tenant_sector IS NOT NULL AND tenant_sector != ''
+            GROUP BY tenant_sector
+            ORDER BY Area_Leased_Mln_Sqft DESC
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
+            
+            total_area = df['Area_Leased_Mln_Sqft'].sum()
+            df['Percentage'] = (df['Area_Leased_Mln_Sqft'] / total_area * 100).round(1)
             
             return df.to_dict('records')
     except Error as e:
@@ -61,7 +77,168 @@ def get_lease_start_rent_by_submarket(selected_quarters):
         if connection.is_connected():
             connection.close()
 
-def get_average_monthly_rental_trend(selected_quarters):
+def get_area_leased_by_submarket():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                submarket AS Submarket,
+                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
+            FROM leases
+            WHERE lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+                AND submarket IS NOT NULL AND submarket != ''
+            GROUP BY submarket
+            ORDER BY Area_Leased_Mln_Sqft DESC
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
+            
+            total_area = df['Area_Leased_Mln_Sqft'].sum()
+            df['Percentage'] = (df['Area_Leased_Mln_Sqft'] / total_area * 100).round(1)
+            
+            return df.to_dict('records')
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+def get_tenant_sector_share_data():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                CONCAT('2024 Qtr ', lease_start_qtr) AS Quarter,
+                tenant_sector AS Tenant_Sector,
+                SUM(area_transcatedsq_ft) AS Total_Area,
+                (SUM(area_transcatedsq_ft) / SUM(SUM(area_transcatedsq_ft)) OVER (PARTITION BY lease_start_qtr)) * 100 AS Percentage
+            FROM leases
+            WHERE lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+                AND tenant_sector IS NOT NULL AND tenant_sector != ''
+            GROUP BY lease_start_qtr, tenant_sector
+            ORDER BY lease_start_qtr, Percentage DESC
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
+            
+            return df.to_dict('records')
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+def get_quarterly_leasing_trend():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                CONCAT('2024 Qtr ', lease_start_qtr) AS Quarter,
+                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_in_mln_sft
+            FROM leases
+            WHERE lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+            GROUP BY lease_start_qtr
+            ORDER BY lease_start_qtr
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
+            
+            return df.to_dict('records')
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+
+
+def get_lease_start_rent_by_submarket():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                submarket AS SUBMARKET,
+                CONCAT(lease_start_year, ' Q', lease_start_qtr) AS Quarter,
+                AVG(lease_start_rent_on_leasable_inr_psf) AS Average_Rent
+            FROM leases
+            WHERE submarket IS NOT NULL 
+                AND lease_start_rent_on_leasable_inr_psf IS NOT NULL
+                AND lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+            GROUP BY submarket, lease_start_year, lease_start_qtr
+            ORDER BY submarket, lease_start_year, lease_start_qtr
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
+            
+            return df.to_dict('records')
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+
+def get_area_leased_by_sector():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                project_category AS Project_Category,
+                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
+            FROM leases
+            WHERE lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+                AND project_category IS NOT NULL AND project_category != ''
+            GROUP BY project_category
+            ORDER BY Area_Leased_Mln_Sqft DESC
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
+            
+            total_area = df['Area_Leased_Mln_Sqft'].sum()
+            df['Percentage'] = (df['Area_Leased_Mln_Sqft'] / total_area * 100).round(1)
+            
+            return df.to_dict('records')
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+def get_security_deposit_data(selected_quarters):
     try:
         connection = mysql.connector.connect(
             host='193.203.184.1',
@@ -70,19 +247,6 @@ def get_average_monthly_rental_trend(selected_quarters):
             database='u661384233_rejournal'
         )
         if connection.is_connected():
-            # First, let's get the column names
-            cursor = connection.cursor()
-            cursor.execute("DESCRIBE leases")
-            columns = [column[0] for column in cursor.fetchall()]
-            cursor.close()
-
-            # Find the column that likely represents the lease start rent
-            rent_column = next((col for col in columns if 'rent' in col.lower() and 'start' in col.lower()), None)
-
-            if not rent_column:
-                print("Could not find a suitable column for lease start rent.")
-                return []
-
             quarters_condition = "AND CONCAT(lease_start_year, ' Q', lease_start_qtr) IN ({})".format(
                 ','.join(['%s'] * len(selected_quarters))
             ) if selected_quarters else ""
@@ -90,14 +254,13 @@ def get_average_monthly_rental_trend(selected_quarters):
             query = f"""
             SELECT 
                 CONCAT(lease_start_year, ' Q', lease_start_qtr) AS Quarter,
-                AVG({rent_column}) AS Average_Rent
+                COALESCE(submarket, 'Unknown') AS SUBMARKET,
+                AVG(security_deposit_months) AS SECURITY_DEPOSIT
             FROM leases
-            WHERE {rent_column} IS NOT NULL
-                AND lease_start_year IS NOT NULL
-                AND lease_start_qtr IS NOT NULL
+            WHERE security_deposit_months IS NOT NULL
                 {quarters_condition}
-            GROUP BY lease_start_year, lease_start_qtr
-            ORDER BY lease_start_year, lease_start_qtr
+            GROUP BY lease_start_year, lease_start_qtr, submarket
+            ORDER BY SECURITY_DEPOSIT DESC
             """
             
             df = pd.read_sql(query, connection, params=selected_quarters)
@@ -106,7 +269,41 @@ def get_average_monthly_rental_trend(selected_quarters):
                 print("No data returned from the query.")
                 return []
             
-            df['Average_Rent'] = df['Average_Rent'].round(2)
+            df['SECURITY_DEPOSIT'] = df['SECURITY_DEPOSIT'].round(1)
+            
+            chart_data = df.groupby('SUBMARKET').agg({'SECURITY_DEPOSIT': 'mean'}).reset_index().to_dict('records')
+            
+            return chart_data
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+
+
+def get_average_monthly_rental_trend():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                CONCAT('Qtr ', lease_start_qtr) AS Quarter,
+                AVG(average_monthly_rent_on_leasable_inr_psf) AS Average_Rent
+            FROM leases
+            WHERE lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+                AND average_monthly_rent_on_leasable_inr_psf IS NOT NULL
+            GROUP BY lease_start_qtr
+            ORDER BY lease_start_qtr
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
             
             return df.to_dict('records')
     except Error as e:
@@ -148,57 +345,6 @@ def get_available_quarters():
         if connection.is_connected():
             connection.close()
 
-def get_tenant_sector_data():
-    try:
-        connection = mysql.connector.connect(
-            host='193.203.184.1',
-            user='u661384233_dbuser',
-            password='Rejournal@123',
-            database='u661384233_rejournal'
-        )
-
-        if connection.is_connected():
-            query = """
-            SELECT tenant_sector, SUM(area_transcatedsq_ft) as total_area 
-            FROM leases 
-            WHERE tenant_sector IS NOT NULL AND tenant_sector != '' 
-            GROUP BY tenant_sector 
-            ORDER BY total_area DESC
-
-            """
-            
-            df = pd.read_sql(query, connection)
-            
-            # Check if the dataframe is empty
-            if df.empty:
-                print("No data returned from the query.")
-                return []
-            
-            # Calculate the total area
-            total_area = df['total_area'].sum()
-            
-            # Check if total_area is zero
-            if total_area == 0:
-                print("Total area is zero. Cannot calculate percentages.")
-                return []
-            
-            # Calculate the percentage and format the data for the pie chart
-            chart_data = df.apply(lambda row: {
-                "id": row['tenant_sector'],
-                "label": row['tenant_sector'],
-                "value": round(row['total_area'] / total_area * 100, 2),
-                "color": f"hsl({hash(row['tenant_sector']) % 360}, 70%, 50%)"
-            }, axis=1).tolist()
-            
-            return chart_data
-
-    except Error as e:
-        print(f"Error: {e}")
-        return []
-
-    finally:
-        if connection.is_connected():
-            connection.close()
 
 
 def get_qoq_leasing_data():
@@ -246,49 +392,7 @@ def get_qoq_leasing_data():
         if connection.is_connected():
             connection.close()
             
-def get_area_leased_by_sector():
-    try:
-        connection = mysql.connector.connect(
-            host='193.203.184.1',
-            user='u661384233_dbuser',
-            password='Rejournal@123',
-            database='u661384233_rejournal'
-        )
-        if connection.is_connected():
-            query = """
-            SELECT 
-                COALESCE(project_category, 'Unknown') AS sector,
-                SUM(area_transcatedsq_ft) / 1000000 AS area_leased_mln
-            FROM leases
-            GROUP BY project_category
-            ORDER BY area_leased_mln DESC
-            LIMIT 10  -- Limiting to top 10 sectors for better visualization
-            """
-            
-            df = pd.read_sql(query, connection)
-            
-            if df.empty:
-                print("No data returned from the query.")
-                return [], 0
-            
-            total_area = df['area_leased_mln'].sum()
-            
-            chart_data = df.apply(lambda row: {
-                "id": row['sector'],
-                "label": row['sector'],
-                "value": row['area_leased_mln'],
-                "formattedValue": f"{row['area_leased_mln']:.2f}M ({row['area_leased_mln']/total_area*100:.2f}%)"
-            }, axis=1).tolist()
-            
-            return chart_data, total_area
-    except Error as e:
-        print(f"Error: {e}")
-        return [], 0
-    finally:
-        if connection.is_connected():
-            connection.close()
-            
-            
+        
 def get_security_deposit_data():
     try:
         connection = mysql.connector.connect(
@@ -365,85 +469,58 @@ def get_leased_area_expiry_data():
             
             
             
-def get_tenant_sector_share_data():
-    try:
-        connection = mysql.connector.connect(
-            host='193.203.184.1',
-            user='u661384233_dbuser',
-            password='Rejournal@123',
-            database='u661384233_rejournal'
-        )
-        if connection.is_connected():
-            query = """
-            SELECT 
-                CONCAT(lease_start_year, ' Q', lease_start_qtr) AS quarter,
-                tenant_sector,
-                SUM(area_transcatedsq_ft) AS area_leased_sqft
-            FROM leases
-            WHERE lease_start_year IS NOT NULL 
-                AND lease_start_qtr IS NOT NULL
-                AND tenant_sector IS NOT NULL
-                AND tenant_sector != ''
-            GROUP BY lease_start_year, lease_start_qtr, tenant_sector
-            ORDER BY lease_start_year DESC, lease_start_qtr DESC
-            LIMIT 16  -- This will give us data for the last 2 quarters
-            """
-            
-            df = pd.read_sql(query, connection)
-            
-            if df.empty:
-                print("No data returned from the query.")
-                return []
-            
-            # Calculate percentage for each sector within each quarter
-            df['percentage'] = df.groupby('quarter')['area_leased_sqft'].transform(lambda x: x / x.sum() * 100)
-            
-            chart_data = df.to_dict('records')
-            return chart_data
-    except Error as e:
-        print(f"Error: {e}")
-        return []
-    finally:
-        if connection.is_connected():
-            connection.close()
+
             
             
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def get_area_sold_by_submarket():
     try:
-        connection = mysql.connector.connect(
-            host='193.203.184.1',
-            user='u661384233_dbuser',
-            password='Rejournal@123',
-            database='u661384233_rejournal'
-        )
+        connection = get_db_connection()
         if connection.is_connected():
             query = """
-            SELECT 
+            SELECT
                 submarket,
                 SUM(area_sold_sq_ft) as total_area_sold
             FROM sales
             WHERE submarket IS NOT NULL AND submarket != ''
+                AND sale_year = 2024
+                AND sale_qtr IN (1, 2)
             GROUP BY submarket
             ORDER BY total_area_sold DESC
             """
-            
+           
             df = pd.read_sql(query, connection)
-            
+           
             if df.empty:
-                print("No data returned from the query.")
+                logger.warning("No data returned from the query.")
                 return []
-            
+           
             total_area = df['total_area_sold'].sum()
-            df['percentage'] = df['total_area_sold'] / total_area * 100
-            
-            chart_data = df.to_dict('records')
-            return chart_data
+            if total_area > 0:
+                df['percentage'] = (df['total_area_sold'] / total_area * 100).round(2)
+            else:
+                logger.warning("Total area sold is zero. Setting all percentages to 0.")
+                df['percentage'] = 0
+           
+            result = df.to_dict('records')
+            logger.info(f"Successfully retrieved data for {len(result)} submarkets.")
+            return result
     except Error as e:
-        print(f"Error: {e}")
+        logger.error(f"Database error: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
         return []
     finally:
-        if connection.is_connected():
+        if connection and connection.is_connected():
             connection.close()
+            logger.debug("Database connection closed.")
+import mysql.connector
+import pandas as pd
 
 def get_area_sold_by_quarter():
     try:
@@ -453,32 +530,37 @@ def get_area_sold_by_quarter():
             password='Rejournal@123',
             database='u661384233_rejournal'
         )
+       
         if connection.is_connected():
             query = """
-            SELECT 
-                CONCAT(sale_year, ' Q', sale_qtr) as sale_quarter,
-                SUM(area_sold_sq_ft) / 1000000 as area_sold_mln_sqft
+            SELECT
+                CONCAT('Q', sale_qtr) as QTR,
+                SUM(area_sold_sq_ft) as total_area_sold
             FROM sales
-            GROUP BY sale_year, sale_qtr
-            ORDER BY sale_year DESC, sale_qtr DESC
-            LIMIT 2
+            WHERE sale_year = 2024 AND sale_qtr IN (1, 2)
+            GROUP BY sale_qtr
+            ORDER BY sale_qtr
             """
-            
+           
             df = pd.read_sql(query, connection)
-            
+           
             if df.empty:
                 print("No data returned from the query.")
-                return []
-            
-            chart_data = df.to_dict('records')
-            return chart_data
-    except Error as e:
+                return None
+           
+            total_area = df['total_area_sold'].sum()
+            df['percentage'] = (df['total_area_sold'] / total_area * 100).round(1)
+           
+            result = df.to_dict('records')
+            return result
+   
+    except mysql.connector.Error as e:
         print(f"Error: {e}")
-        return []
+        return None
+   
     finally:
         if connection.is_connected():
             connection.close()
-
 def get_sales_by_buyer_type():
     try:
         connection = mysql.connector.connect(
@@ -626,3 +708,71 @@ def get_office_stock_by_completion_year(selected_statuses):
             connection.close()
             
 
+import pandas as pd
+import mysql.connector
+
+def get_db_connection():
+    return mysql.connector.connect(
+        host='193.203.184.1',
+        user='u661384233_dbuser',
+        password='Rejournal@123',
+        database='u661384233_rejournal'
+    )
+
+def execute_query(query):
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            df = pd.read_sql(query, connection)
+            if df.empty:
+                print("No data returned from the query.")
+                return None
+            return df
+    except mysql.connector.Error as e:
+        print(f"Error: {e}")
+        return None
+    finally:
+        if connection.is_connected():
+            connection.close()
+
+def get_submarket_data():
+    query = """
+    SELECT 
+        submarket as label,
+        SUM(area_transcatedsq_ft) as total_area
+    FROM leases
+    WHERE lease_start_year = 2024 AND lease_start_qtr IN (1, 2)
+    GROUP BY submarket
+    """
+    df = execute_query(query)
+    if df is not None:
+        df['percentage'] = (df['total_area'] / df['total_area'].sum() * 100).round(2)
+    return df
+
+def get_tenant_sector_data():
+    query = """
+    SELECT 
+        tenant_sector as label,
+        SUM(area_transcatedsq_ft) as total_area
+    FROM leases
+    WHERE lease_start_year = 2024 AND lease_start_qtr IN (1, 2)
+    GROUP BY tenant_sector
+    """
+    df = execute_query(query)
+    if df is not None:
+        df['percentage'] = (df['total_area'] / df['total_area'].sum() * 100).round(2)
+    return df
+
+def get_tenant_origin_data():
+    query = """
+    SELECT 
+        tenant_origin_continent as label,
+        SUM(area_transcatedsq_ft) as total_area
+    FROM leases
+    WHERE lease_start_year = 2024 AND lease_start_qtr IN (1, 2)
+    GROUP BY tenant_origin_continent
+    """
+    df = execute_query(query)
+    if df is not None:
+        df['percentage'] = (df['total_area'] / df['total_area'].sum() * 100).round(2)
+    return df
