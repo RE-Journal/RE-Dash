@@ -2,71 +2,31 @@ import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
-import numpy as np
 from io import BytesIO
 
 from database_operations import (
-    get_tenant_sector_data, get_qoq_leasing_data, get_area_leased_by_sector,
+    get_area_leased_by_sector,get_area_tenant_sector_share_data,
     get_security_deposit_data, get_leased_area_expiry_data, get_tenant_sector_share_data,
-    get_area_sold_by_submarket, get_area_sold_by_quarter, get_sales_by_buyer_type,
-    get_completion_status_options, get_property_area_by_submarket, get_office_stock_by_completion_year,
-    get_available_quarters, get_average_monthly_rental_trend, get_lease_start_rent_by_submarket
+    get_area_leased_by_submarket, get_area_sold_by_quarter, get_sales_by_buyer_type,
+    get_average_monthly_rental_trend, get_lease_start_rent_by_submarket,
+    get_submarket_data, get_tenant_origin_data, get_quarterly_leasing_trend, 
+    get_area_sold_by_submarket,get_tenant_origin_share_data
 )
 
 st.set_page_config(layout="wide", page_title="RE Journal Sample Dashboards", page_icon="📊")
 
-# Updated Custom CSS for cleaner and more consistent styling
+# Custom CSS for styling
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 2rem;
-        color: #3AC0B0;
-    }
-    .chart-container {
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        background-color: white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    .chart-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 1rem;
-        color: #333;
-    }
-    .stButton > button {
-        width: 100%;
-        border-radius: 5px;
-        background-color: white;
-        color: #3AC0B0;
-        border: 1px solid #3AC0B0;
-        padding: 0.5rem 1rem;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    .stButton > button:hover {
-        background-color: #f0f0f0;
-        color: #2E9A8C;
-        border-color: #2E9A8C;
-    }
-    .footer {
-        text-align: center;
-        color: gray;
-        margin-top: 2rem;
-        border-top: 1px solid #e0e0e0;
-        padding-top: 1rem;
-    }
-    .main-header-icon {
-        font-size: 3rem;
-        vertical-align: middle;
-        margin-right: 0.5rem;
-    }
+    .main .block-container { padding: 1rem 5rem; }
+    .stApp { margin-top: -10px; }
+    .stApp > header { background-color: transparent; }
+    .main-header { font-size: 2.5rem; font-weight: bold; text-align: center; margin-bottom: 2rem; }
+    .chart-container { border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .chart-title { font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem; color: #333; }
+    .stButton > button { width: 100%; border-radius: 5px; background-color: white; color: #3AC0B0; border: 1px solid #3AC0B0; padding: 0.5rem 1rem; font-weight: bold; transition: all 0.3s ease; }
+    .stButton > button:hover { background-color: #f0f0f0; border-color: #2E9A8C; }
+    .footer { text-align: center; color: gray; margin-top: 2rem; border-top: 1px solid #e0e0e0; padding-top: 1rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -79,406 +39,305 @@ def chart_with_border(chart_function):
         chart_function()
         st.markdown('</div>', unsafe_allow_html=True)
 
-def tenant_sector_distribution_chart():
-    create_centered_heading("📊 Tenant Sector Distribution")
-    tenant_sector_data = get_tenant_sector_data()
-    if tenant_sector_data:
-        colors = ['#FFD700', '#48D1CC', '#FFA500', '#90EE90']
-        fig = go.Figure(data=[go.Pie(
-            labels=[item['label'] for item in tenant_sector_data],
-            values=[item['value'] for item in tenant_sector_data],
-            textinfo='value',
-            hoverinfo='label+percent',
-            marker=dict(colors=colors, line=dict(color='#000000', width=2)),
-            textfont_size=14
-        )])
-        fig.update_layout(
-            height=300,
-            margin=dict(t=0, b=0, l=0, r=0),
-            showlegend=True,
-            legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05),
-            font=dict(family="Arial", size=12),
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.write("No data available for Tenant Sector Distribution")
 
-def area_leased_by_sector_chart():
-    create_centered_heading("🏢 Area Leased by Sector")
-    area_leased_data, total_area = get_area_leased_by_sector()
-    if area_leased_data:
-        colors = ['#FFD700', '#48D1CC', '#FFA500', '#90EE90']
-        fig = go.Figure(data=[go.Pie(
-            labels=[item['label'] for item in area_leased_data],
-            values=[item['value'] for item in area_leased_data],
-            textinfo='percent',
-            hoverinfo='label+value',
-            hovertemplate='%{label}<br>Area: %{value:.2f}M sq ft<extra></extra>',
-            marker=dict(colors=colors, line=dict(color='#000000', width=2)),
-            textfont_size=14
-        )])
-        fig.update_layout(
-            height=300,
-            margin=dict(t=0, b=0, l=0, r=0),
-            showlegend=True,
-            legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05),
-            font=dict(family="Arial", size=12),
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.write("No data available for Area Leased by Sector")
+def create_pie_chart(data, labels_col, values_col, percentage_col, title, height=400):
+    df = pd.DataFrame(data)
+    fig = go.Figure(data=[go.Pie(
+        labels=df[labels_col],
+        values=df[values_col],
+        text=df[percentage_col],
+        texttemplate='%{text:.1f}%',
+        hovertext=[f"{label}<br>{value:.2f}M ({percent:.1f}%)" 
+                   for label, value, percent in zip(df[labels_col], df[values_col], df[percentage_col])],
+        textposition='inside',
+        hoverinfo='text',
+        textinfo='text'
+    )])
+    fig.update_traces(textfont_size=12, textfont_color='white')
+    fig.update_layout(
+        height=height,
+        legend_title=labels_col.upper(),
+        font=dict(family="Arial", size=12),
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.02,
+            itemwidth=30
+        ),
+        margin=dict(l=20, r=80, t=30, b=20),
+        autosize=True
+    )
+    config = {
+        'displayModeBar': False,
+        'staticPlot': False,
+        'responsive': True
+    }
+    create_centered_heading(title)
+    st.plotly_chart(fig, use_container_width=True, config=config)
 
-def security_deposit_by_submarket_chart():
-    create_centered_heading("💰 Average Security Deposit by Submarket")
-    security_deposit_data = get_security_deposit_data()
-    if security_deposit_data:
-        df = pd.DataFrame(security_deposit_data)
-        df = df.sort_values('SECURITY_DEPOSIT', ascending=False)
-        fig = go.Figure()
-        fig.add_trace(go.Bar(
-            x=df['SUBMARKET'],
-            y=df['SECURITY_DEPOSIT'],
-            text=df['SECURITY_DEPOSIT'],
-            textposition='outside',
-            texttemplate='%{text:.1f}',
-            marker_color='#3AC0B0',
-            hoverinfo='x+y',
-            hovertemplate='<b>%{x}</b><br>Security Deposit: %{y:.1f} months<extra></extra>'
-        ))
-        fig.update_layout(
-            xaxis_title="Submarket",
-            yaxis_title="Average Security Deposit (months)",
-            height=400,
-            plot_bgcolor='white',
-            yaxis=dict(gridcolor='lightgrey'),
-            xaxis=dict(tickangle=-45, title_standoff=25),
-            margin=dict(b=100, l=50, r=50),
-            font=dict(family="Arial", size=12),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+def tenant_origin_share_chart():
+    data = get_tenant_origin_share_data()
+    if data:
+        create_pie_chart(data, 'Tenant_Origin', 'Area_Leased_Mln_Sqft', 'Percentage', 
+                         "🌍 Share of AREA LEASED by TENANT ORIGIN (H124)")
     else:
-        st.write("No data available for Security Deposit by Submarket")
+        st.write("No data available for Share of AREA LEASED by TENANT ORIGIN for 2024 H1")
+
+def area_leased_by_submarket_chart():
+    data = get_area_leased_by_submarket()
+    if data:
+        create_pie_chart(data, 'Submarket', 'Area_Leased_Mln_Sqft', 'Percentage', 
+                         "🏙️ Share of AREA LEASED by SUBMARKET (H124)")
+    else:
+        st.write("No data available for Share of AREA LEASED by SUBMARKET for 2024 H1")
+
+def area_leased_tenant_sector_share_chart():
+    data = get_area_tenant_sector_share_data()
+    if data:
+        create_pie_chart(data, 'Tenant_Sector', 'Area_Leased_Mln_Sqft', 'Percentage', 
+                         "🏢 Share of AREA LEASED by TENANT SECTOR (H124)")
+    else:
+        st.write("No data available for Share of AREA LEASED by TENANT SECTOR for 2024 H1")
 
 def tenant_sector_share_chart():
-    create_centered_heading("🏛️ Tenant Sector Share in Leasing")
-    tenant_sector_share_data = get_tenant_sector_share_data()
-    if tenant_sector_share_data:
-        df = pd.DataFrame(tenant_sector_share_data)
-        
-        # Define the color scheme (same as tenant sector distribution chart)
-        colors = ['#FFD700', '#48D1CC', '#FFA500', '#90EE90', '#FF69B4', '#BA55D3', '#20B2AA', '#DDA0DD']
-        
-        # Ensure we have enough colors for all sectors
-        while len(colors) < len(df['tenant_sector'].unique()):
-            colors.extend(colors)
-        
-        # Create a color map
-        color_map = dict(zip(df['tenant_sector'].unique(), colors[:len(df['tenant_sector'].unique())]))
-        
-        fig = px.bar(df, x='quarter', y='percentage', color='tenant_sector', 
-                     labels={'percentage': 'Share of Area Leased (%)', 'quarter': 'Quarter'},
-                     text='percentage',
-                     color_discrete_map=color_map)
-        
-        fig.update_traces(texttemplate='%{text:.1f}%', textposition='inside')
+    create_centered_heading("🏢 Tenant Sector share in Leasing (H124)")
+    data = get_tenant_sector_share_data()
+    if data:
+        df = pd.DataFrame(data)
+        fig = px.bar(df, x='Quarter', y='Percentage', color='Tenant_Sector',
+                     labels={'Percentage': 'Share of Area Leased (%)'},
+                     text='Percentage')
+        fig.update_traces(texttemplate='%{text:.2f}%', textposition='inside')
         fig.update_layout(
-            xaxis_title="Quarter",
+            xaxis_title="Year",
             yaxis_title="Share of Area Leased (%)",
-            height=400,
+            height=500,
             barmode='stack',
-            yaxis_range=[0, 100],
-            legend_title="Tenant Sector",
+            legend_title="TENANT SECTOR",
             font=dict(family="Arial", size=12),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            yaxis=dict(tickformat='.0%', range=[0, 100],dtick=10,tickmode='linear'),
+            legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
+            margin=dict(l=50, r=150, t=50, b=50)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        config = {
+            'displayModeBar': False,
+            'staticPlot': True
+        }
+        st.plotly_chart(fig, use_container_width=True, config=config)
     else:
-        st.write("No data available for Tenant Sector share in Leasing")
+        st.write("No data available for Tenant Sector share in Leasing for 2024 Q1-Q2")
 
-def qoq_leasing_trend_chart():
-    create_centered_heading("📈 Quarter-over-Quarter Leasing Trend")
-    qoq_data = get_qoq_leasing_data()
-    if qoq_data:
-        fig = go.Figure(data=[go.Bar(
-            x=[item['Quarter'] for item in qoq_data],
-            y=[item['Area_Leased_in_mln_sft'] for item in qoq_data],
-            text=[f"{item['Area_Leased_in_mln_sft']:.2f}" for item in qoq_data],
-            textposition='auto',
-            marker_color='#3AC0B0',
-        )])
+def quarterly_leasing_trend_chart():
+    create_centered_heading("📊 Quarterly Trend in LEASING (H124)")
+    data = get_quarterly_leasing_trend()
+    if data:
+        df = pd.DataFrame(data)
+        fig = px.bar(df, x='Quarter', y='Area_Leased_in_mln_sft',
+                     labels={'Area_Leased_in_mln_sft': 'Area Leased in mn sft'},
+                     text='Area_Leased_in_mln_sft')
+        fig.update_traces(texttemplate='%{text:.1f}M', textposition='outside')
         fig.update_layout(
             xaxis_title="Quarter",
-            yaxis_title="Area Leased (mln sft)",
+            yaxis_title="Area Leased in mn sft",
             height=400,
             font=dict(family="Arial", size=12),
+            yaxis=dict(range=[0, max(df['Area_Leased_in_mln_sft']) * 1.1], tickformat='.1f'),
+            margin=dict(l=50, r=50, t=50, b=50)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        config = {
+            'displayModeBar': False,
+            'staticPlot': True
+        }
+        st.plotly_chart(fig, use_container_width=True, config=config)
     else:
-        st.write("No data available for Quarter-over-Quarter Leasing Trend")
+        st.write("No data available for Quarterly Leasing Trend for 2024 Q1-Q2")
 
-def leased_area_expiry_chart():
-    create_centered_heading("📅 Leased Area Due for Expiry by Year")
-    expiry_data = get_leased_area_expiry_data()
-    if expiry_data:
-        df = pd.DataFrame(expiry_data)
-        if not df.empty:
-            fig = px.bar(df, x='expiry_year', y='area_mln_sqft',
-                         labels={'expiry_year': 'Year', 'area_mln_sqft': 'Leased Area (million sq ft)'},
-                         text='area_mln_sqft')
-            fig.update_traces(texttemplate='%{text:.2f}M', textposition='outside', marker_color='#3AC0B0')
-            fig.update_layout(
-                xaxis_title="Year",
-                yaxis_title="Leased Area (million sq ft)",
-                height=400,
-                yaxis=dict(tickformat='.2f'),
-                xaxis=dict(dtick=1, tickangle=45, tickmode='linear'),
-                margin=dict(b=100),
-                font=dict(family="Arial", size=12),
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.write("No data available for Leased Area due for Expiry")
-    else:
-        st.write("Error fetching data for Leased Area due for Expiry")
-
-def average_monthly_rental_trend_chart(selected_quarters):
-    create_centered_heading("💵 Average Monthly Rental Trend")
-    rental_trend_data = get_average_monthly_rental_trend(selected_quarters)
-    if rental_trend_data:
-        df = pd.DataFrame(rental_trend_data)
+def average_monthly_rental_trend_chart():
+    create_centered_heading("📈 Average Monthly Rental (INR psf) Trend")
+    data = get_average_monthly_rental_trend()
+    if data:
+        df = pd.DataFrame(data)
         fig = px.bar(df, x='Quarter', y='Average_Rent',
                      labels={'Average_Rent': 'Average Monthly Rental (INR psf)'},
                      text='Average_Rent')
-        fig.update_traces(texttemplate='%{text:.0f}', textposition='outside', marker_color='#3AC0B0')
+        fig.update_traces(texttemplate='%{text:.0f}', textposition='outside')
         fig.update_layout(
             xaxis_title="Quarter",
             yaxis_title="Average Monthly Rental (INR psf)",
             height=400,
             font=dict(family="Arial", size=12),
+            yaxis=dict(range=[0, max(df['Average_Rent']) * 1.1]),
+            margin=dict(l=50, r=50, t=50, b=50)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        config = {
+            'displayModeBar': False,
+            'staticPlot': True
+        }
+        st.plotly_chart(fig, use_container_width=True, config=config)
     else:
-        st.write("No data available for Average Monthly Rental Trend")
+        st.write("No data available for Average Monthly Rental Trend for 2024 Q1-Q2")
 
-def lease_start_rent_by_submarket_chart(selected_quarters):
-    create_centered_heading("🏙️ Average Lease Start Rent by Submarket and Quarter")
-    lease_start_rent_data = get_lease_start_rent_by_submarket(selected_quarters)
-    if lease_start_rent_data:
-        df = pd.DataFrame(lease_start_rent_data)
-        
-        # Define the color scheme (using a subset of colors from the tenant sector charts)
-        colors = ['#FFD700', '#48D1CC', '#FFA500', '#90EE90', '#FF69B4', '#BA55D3', '#20B2AA', '#DDA0DD']
-        
-        # Ensure we have enough colors for all quarters
-        while len(colors) < len(df['Quarter'].unique()):
-            colors.extend(colors)
-        
-        # Create a color map
-        color_map = dict(zip(df['Quarter'].unique(), colors[:len(df['Quarter'].unique())]))
-        
+def lease_start_rent_by_submarket_chart():
+    create_centered_heading("🏙️ Average of LEASE START RENT ON LEASABLE (INR psf) by SUBMARKET and Quarter")
+    data = get_lease_start_rent_by_submarket()
+    if data:
+        df = pd.DataFrame(data)
         fig = px.bar(df, x='SUBMARKET', y='Average_Rent', color='Quarter',
                      labels={'Average_Rent': 'Average Lease Start Rent (INR psf)', 'SUBMARKET': 'Submarket'},
-                     text='Average_Rent',
-                     barmode='group',
-                     color_discrete_map=color_map)
-        
+                     text='Average_Rent', barmode='group')
         fig.update_traces(texttemplate='%{text:.0f}', textposition='outside')
         fig.update_layout(
-            xaxis_title="Submarket",
-            yaxis_title="Average Lease Start Rent (INR psf)",
-            height=500,  # Increased height for better readability
-            legend_title="Quarter",
-            xaxis_tickangle=-45,
+            xaxis_title="Submarket", yaxis_title="Average Lease Start Rent (INR psf)",
+            height=500, legend_title="Quarter", xaxis_tickangle=-45,
             font=dict(family="Arial", size=12),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            margin=dict(l=50, r=50, t=80, b=100)  # Adjusted margins for rotated x-axis labels
+            margin=dict(l=50, r=50, t=80, b=100)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        config = {'displayModeBar': False, 'staticPlot': True}
+        st.plotly_chart(fig, use_container_width=True, config=config)
     else:
-        st.write("No data available for Lease Start Rent by Submarket")
+        st.write("No data available for Lease Start Rent by Submarket for 2024 Q1-Q2")
+
+def area_leased_by_sector_chart():
+    create_centered_heading("🏢 Area Leased by Property Sector (H124)")
+    data = get_area_leased_by_sector()
+    if data:
+        df = pd.DataFrame(data)
+        fig = go.Figure(data=[go.Pie(
+            labels=df['Project_Category'],
+            values=df['Area_Leased_Mln_Sqft'],
+            text=[f"{value:.2f}M ({percent:.1f}%)" for value, percent in zip(df['Area_Leased_Mln_Sqft'], df['Percentage'])],
+            textposition='outside',
+            hoverinfo='label+percent+text',
+            textinfo='text'
+        )])
+        fig.update_traces(textfont_size=12, pull=[0.05] * len(df))
+        fig.update_layout(
+            height=450,
+            legend_title="PROJECT CATEGORY",
+            font=dict(family="Arial", size=12),
+            legend=dict(orientation="v", yanchor="middle", y=0.9, xanchor="left", x=1),
+            margin=dict(l=50, r=150, t=50, b=50)
+        )
+        config = {
+            'displayModeBar': False,
+            'staticPlot': False
+        }
+        st.plotly_chart(fig, use_container_width=True, config=config)
+    else:
+        st.write("No data available for Area Leased by Property Sector for 2024 H1")
 
 def leases_page():
     st.markdown('<h2 class="main-header">📋 Leases Dashboard</h2>', unsafe_allow_html=True)
-    
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        chart_with_border(area_leased_by_submarket_chart)
+    with col2:
+        chart_with_border(lambda: area_leased_tenant_sector_share_chart())
+    with col3:
+        chart_with_border(lambda: tenant_origin_share_chart())
+
     col1, col2 = st.columns(2)
     with col1:
-        chart_with_border(tenant_sector_distribution_chart)
-    with col2:
         chart_with_border(area_leased_by_sector_chart)
-
-    col3, col4 = st.columns(2)
-    with col3:
-        chart_with_border(security_deposit_by_submarket_chart)
-    with col4:
+    with col2:
         chart_with_border(tenant_sector_share_chart)
 
-    chart_with_border(qoq_leasing_trend_chart)
-    chart_with_border(leased_area_expiry_chart)
-    
-    available_quarters = get_available_quarters()
-    selected_quarters = st.multiselect(
-        "🗓️ Select Quarters",
-        options=available_quarters,
-        default=available_quarters[:2]
-    )
+    col1, col2 = st.columns(2)
+    with col1:
+        chart_with_border(average_monthly_rental_trend_chart)
+    with col2:
+        chart_with_border(quarterly_leasing_trend_chart)
 
-    col5, col6 = st.columns(2)
-    with col5:
-        chart_with_border(lambda: average_monthly_rental_trend_chart(selected_quarters))
-    with col6:
-        chart_with_border(lambda: lease_start_rent_by_submarket_chart(selected_quarters))
+    chart_with_border(lease_start_rent_by_submarket_chart)
 
-def area_sold_by_submarket(color_scale):
-    create_centered_heading("🏙️ Share of Area Sold by Submarket")
-    area_sold_data = get_area_sold_by_submarket()
-    if area_sold_data:
-        df = pd.DataFrame(area_sold_data)
-        df = df.sort_values('percentage', ascending=True)
+def area_sold_by_submarket_chart():
+    create_centered_heading("📈 Share of AREA SOLD by SUBMARKET (H124)")
+    data = get_area_sold_by_submarket()
+    if data:
+        df = pd.DataFrame(data).sort_values('percentage', ascending=True)
         fig = px.bar(df, y='submarket', x='percentage', orientation='h',
                      text=[f"{val:.2f}%" for val in df['percentage']],
-                     color='percentage',
-                     color_continuous_scale=color_scale)
+                     labels={'percentage': 'AREA SOLD', 'submarket': 'SUBMARKET'},
+                     color_discrete_sequence=['#1E90FF'])
         fig.update_layout(
-            xaxis_title="% of Total Area Sold",
-            yaxis_title="Submarket",
-            height=400,
-            xaxis=dict(tickformat='.1f'),
-            coloraxis_showscale=False,
+            xaxis_title="AREA SOLD", yaxis_title="SUBMARKET", height=400,
+            xaxis=dict(tickformat='.1f', ticksuffix='%'),
             font=dict(family="Arial", size=12),
         )
         fig.update_traces(textposition='outside', texttemplate='%{text}')
-        st.plotly_chart(fig, use_container_width=True)
+        config = {'displayModeBar': False, 'staticPlot': True}
+        st.plotly_chart(fig, use_container_width=True, config=config)
     else:
         st.write("No data available for Area Sold by Submarket")
 
-def area_sold_by_quarter(color_scale):
-    create_centered_heading("📊 Share of Area Sold by Quarter")
-    area_sold_qtr_data = get_area_sold_by_quarter()
-    if area_sold_qtr_data:
-        df = pd.DataFrame(area_sold_qtr_data)
-        
-        # Create a multiselect widget for quarter selection
-        available_quarters = df['sale_quarter'].unique().tolist()
-        selected_quarters = st.multiselect(
-            "Select Quarters",
-            options=available_quarters,
-            default=available_quarters,
-            key="area_sold_quarter_filter"
+def area_sold_by_quarter():
+    create_centered_heading("📊 Share of Area Sold by Quarter (H124)")
+    data = get_area_sold_by_quarter()
+    if data:
+        df = pd.DataFrame(data)
+        total_area = df['total_area_sold'].sum()
+        df['percentage'] = (df['total_area_sold'] / total_area * 100).round(2)
+        fig = go.Figure(data=[go.Bar(
+            x=df['QTR'],
+            y=df['percentage'],
+            text=[f"{p:.2f}%" for p in df['percentage']],
+            textposition='outside',
+            marker_color='#0078D4'
+        )])
+        fig.update_layout(
+            xaxis_title="Quarter", yaxis_title="Share of Area Sold (%)", height=400,
+            margin=dict(t=50, b=50, l=50, r=50), plot_bgcolor='white',
+            yaxis=dict(tickformat='.2f', range=[0, max(df['percentage']) * 1.1],
+                       tickfont=dict(size=12), showgrid=True, gridcolor='lightgrey'),
+            xaxis=dict(tickfont=dict(size=12), showgrid=False),
+            showlegend=False, font=dict(family="Arial", size=12),
         )
-        
-        # Filter the dataframe based on selected quarters
-        df_filtered = df[df['sale_quarter'].isin(selected_quarters)]
-        
-        if not df_filtered.empty:
-            total_area = df_filtered['area_sold_mln_sqft'].sum()
-            df_filtered['percentage'] = df_filtered['area_sold_mln_sqft'] / total_area * 100
-            df_filtered = df_filtered.sort_values('sale_quarter')
-            
-            fig = go.Figure(data=[go.Bar(
-                x=df_filtered['sale_quarter'],
-                y=df_filtered['percentage'],
-                text=[f"{p:.1f}%" for p in df_filtered['percentage']],
-                textposition='outside',
-                marker_color='#3AC0B0',
-                marker_line_color='#3AC0B0',
-                marker_line_width=1.5,
-                opacity=0.8
-            )])
-            
-            fig.update_layout(
-                xaxis_title="Quarter",
-                yaxis_title="Share of Area Sold (%)",
-                height=400,
-                margin=dict(t=0, b=50, l=50, r=50),
-                plot_bgcolor='white',
-                yaxis=dict(
-                    tickformat='%',
-                    range=[0, 100],
-                    dtick=20,
-                    tickfont=dict(size=12),
-                    showgrid=True,
-                    gridcolor='lightgrey',
-                ),
-                xaxis=dict(
-                    tickfont=dict(size=12),
-                    showgrid=False,
-                    tickangle=-45
-                ),
-                showlegend=False,
-                font=dict(family="Arial", size=12),
-            )
-            
-            fig.update_traces(
-                hoverinfo='text',
-                hovertemplate='%{x}<br>Share: %{text}<extra></extra>'
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.write("Please select at least one quarter to display the chart.")
+        fig.update_traces(hoverinfo='text', hovertemplate='%{x}<br>Share: %{text}<extra></extra>')
+        config = {'displayModeBar': False, 'staticPlot': True}
+
+        st.plotly_chart(fig, use_container_width=True, config=config)
     else:
         st.write("No data available for Area Sold by Quarter")
 
-def sales_by_buyer_type(color_sequence):
-    create_centered_heading("👥 Share of Area Sold by Buyer Type (H124)")
-    sales_buyer_type_data = get_sales_by_buyer_type()
-    if sales_buyer_type_data:
-        df = pd.DataFrame(sales_buyer_type_data)
-        
-        colors = ['#FFD700', '#48D1CC', '#FFA500', '#90EE90']
-        
+def sales_by_buyer_type():
+    create_centered_heading("👥 Share of Area Sold by Buyer Type")
+    data = get_sales_by_buyer_type()
+    if data:
+        df = pd.DataFrame(data)
         fig = go.Figure(data=[go.Pie(
             labels=df['buyer_type'],
             values=df['total_area_sold'],
-            marker=dict(colors=colors, line=dict(color='#000000', width=2)),
             textposition='auto',
             textinfo='percent',
             hoverinfo='label+percent+value',
             hovertemplate='<b>%{label}</b><br>%{percent}<br>Area: %{value:,.0f} sq ft<extra></extra>'
         )])
-        
-        fig.update_traces(
-            textfont_size=12,
-            pull=[0.05] * len(df),
-        )
-        
+        fig.update_traces(textfont_size=12, pull=[0.05] * len(df))
         fig.update_layout(
-            legend=dict(
-                orientation="v",
-                yanchor="middle",
-                y=0.5,
-                xanchor="left",
-                x=1.05,
-                font=dict(size=12)
-            ),
-            height=350,
-            margin=dict(t=0, b=20, l=20, r=120),
-            font=dict(family="Arial", size=12),
+            legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05, font=dict(size=12)),
+            height=350, margin=dict(t=0, b=20, l=20, r=120), font=dict(family="Arial", size=12),
         )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        config = {'displayModeBar': False, 'staticPlot': True}
+        st.plotly_chart(fig, use_container_width=True, config=config)
     else:
         st.write("No data available for Sales by Buyer Type")
 
 def sales_page():
     st.markdown('<h2 class="main-header">💰 Sales Dashboard</h2>', unsafe_allow_html=True)
-
-    continuous_color_scale = [
-        (0, "#36BCF3"), (0.17424242198467255, "#36BCF3"),
-        (0.3484848439693451, "#24AEC1"), (0.6742424219846725, "#24AEC1"),
-        (1, "#0C9B7C")
-    ]
-    discrete_colors = ["#36BCF3", "#24AEC1", "#0C9B7C"]
-
+    
     col1, col2 = st.columns(2)
     with col1:
-        chart_with_border(lambda: area_sold_by_submarket(continuous_color_scale))
+        chart_with_border(area_sold_by_quarter)
     with col2:
-        chart_with_border(lambda: area_sold_by_quarter(continuous_color_scale))
+        chart_with_border(area_sold_by_submarket_chart)
 
-    col1, col2, col3 = st.columns([1,2,1])
+    col1, col2, col3 = st.columns(3)
     with col2:
-        chart_with_border(lambda: sales_by_buyer_type(discrete_colors))
+        chart_with_border(sales_by_buyer_type)
 
 def sample_data():
     st.markdown('<h2 class="main-header">📁 Sample Data</h2>', unsafe_allow_html=True)
@@ -542,12 +401,7 @@ def sample_data():
 
 def main():
     st.markdown('<h1 class="main-header">🏢 RE Journal Sample Dashboard</h1>', unsafe_allow_html=True)
-    
-    col1,col2,col3 = st.columns(3)
-
-    with col2:
-        st.link_button("RE Journal Website","https://www.rejournal.in/",use_container_width=True)    
-    
+       
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("📋 Leases", use_container_width=True):
@@ -570,6 +424,10 @@ def main():
         sample_data()
     
     st.markdown('<p class="footer">© 2024 RE Journal. All rights reserved.</p>', unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    with col2:
+        st.link_button("RE Journal Website", "https://www.rejournal.in/", use_container_width=True)  
 
 if __name__ == "__main__":
     main()
