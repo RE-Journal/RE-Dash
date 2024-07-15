@@ -4,6 +4,7 @@ import plotly.express as px
 import pandas as pd
 from io import BytesIO
 
+st.set_page_config(layout="wide")
 from database_operations import (
     get_area_leased_by_sector, get_area_tenant_sector_share_data,
     get_security_deposit_data, get_leased_area_expiry_data, get_tenant_sector_share_data,
@@ -16,7 +17,7 @@ from database_operations import (
 # Main header styling
 st.markdown("""
 <style>
-    .main .block-container { padding: 1rem 5rem; }
+    .main .block-container { padding: 1rem 4rem; }
     .stApp { margin-top: -10px; }
     .stApp > header { background-color: transparent; }
     .main-header { 
