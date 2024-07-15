@@ -50,7 +50,7 @@ def get_tenant_origin_share_data():
             query = """
             SELECT 
                 tenant_origin_continent AS Tenant_Origin,
-                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
+                SUM(leasable_area_sq_ft) / 1000000 AS Area_Leased_Mln_Sqft
             FROM leases
             WHERE lease_start_year = 2024
                 AND lease_start_qtr IN (1, 2)
@@ -83,7 +83,7 @@ def get_area_tenant_sector_share_data():
             query = """
             SELECT 
                 tenant_sector AS Tenant_Sector,
-                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
+                SUM(leasable_area_sq_ft) / 1000000 AS Area_Leased_Mln_Sqft
             FROM leases
             WHERE lease_start_year = 2024
                 AND lease_start_qtr IN (1, 2)
@@ -116,7 +116,7 @@ def get_area_leased_by_submarket():
             query = """
             SELECT 
                 submarket AS Submarket,
-                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
+                SUM(leasable_area_sq_ft) / 1000000 AS Area_Leased_Mln_Sqft
             FROM leases
             WHERE lease_start_year = 2024
                 AND lease_start_qtr IN (1, 2)
@@ -141,16 +141,18 @@ def get_area_leased_by_submarket():
     finally:
         if connection.is_connected():
             connection.close()
+
+
 def get_tenant_sector_share_data():
     try:
         connection = get_db_connection()
         if connection.is_connected():
             query = """
             SELECT 
-                CONCAT('2024 Qtr ', lease_start_qtr) AS Quarter,
+                CONCAT('2024 ', lease_start_qtr) AS Quarter,
                 tenant_sector AS Tenant_Sector,
-                SUM(area_transcatedsq_ft) AS Total_Area,
-                (SUM(area_transcatedsq_ft) / SUM(SUM(area_transcatedsq_ft)) OVER (PARTITION BY lease_start_qtr)) * 100 AS Percentage
+                SUM(leasable_area_sq_ft) AS Total_Area,
+                (SUM(leasable_area_sq_ft) / SUM(SUM(leasable_area_sq_ft)) OVER (PARTITION BY lease_start_qtr)) * 100 AS Percentage
             FROM leases
             WHERE lease_start_year = 2024
                 AND lease_start_qtr IN (1, 2)
@@ -179,7 +181,7 @@ def get_quarterly_leasing_trend():
         if connection.is_connected():
             query = """
             SELECT 
-                CONCAT('2024 Qtr ', lease_start_qtr) AS Quarter,
+                CONCAT('2024 ', lease_start_qtr) AS Quarter,
                 SUM(leasable_area_sq_ft) / 1000000 AS Area_Leased_in_mln_sft
             FROM leases
             WHERE lease_start_year = 2024
@@ -244,7 +246,7 @@ def get_area_leased_by_sector():
             query = """
             SELECT 
                 project_category AS Project_Category,
-                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_Mln_Sqft
+                SUM(leasable_area_sq_ft) / 1000000 AS Area_Leased_Mln_Sqft
             FROM leases
             WHERE lease_start_year = 2024
                 AND lease_start_qtr IN (1, 2)
@@ -279,7 +281,7 @@ def get_average_monthly_rental_trend():
         if connection.is_connected():
             query = """
             SELECT 
-                CONCAT('Qtr ', lease_start_qtr) AS Quarter,
+                CONCAT('2024 ', lease_start_qtr) AS Quarter,
                 AVG(average_monthly_rent_on_leasable_inr_psf) AS Average_Rent
             FROM leases
             WHERE lease_start_year = 2024
@@ -335,8 +337,6 @@ def get_available_quarters():
         if connection.is_connected():
             connection.close()
 
-
-
 def get_qoq_leasing_data():
     try:
         connection = mysql.connector.connect(
@@ -381,10 +381,7 @@ def get_qoq_leasing_data():
     finally:
         if connection.is_connected():
             connection.close()
-            
-        
-
-            
+                       
 def get_leased_area_expiry_data():
     try:
         connection = mysql.connector.connect(
@@ -437,7 +434,7 @@ def get_area_sold_by_submarket():
             query = """
             SELECT
                 submarket,
-                SUM(area_sold_sq_ft) as total_area_sold
+                SUM(area_sold_sqft) as total_area_sold
             FROM sales
             WHERE submarket IS NOT NULL AND submarket != ''
                 AND sale_year = 2024
@@ -487,8 +484,8 @@ def get_area_sold_by_quarter():
         if connection.is_connected():
             query = """
             SELECT
-                CONCAT('Q', sale_qtr) as QTR,
-                SUM(area_sold_sq_ft) as total_area_sold
+                CONCAT('', sale_qtr) as QTR,
+                SUM(area_sold_sqft) as total_area_sold
             FROM sales
             WHERE sale_year = 2024 AND sale_qtr IN (1, 2)
             GROUP BY sale_qtr
@@ -526,7 +523,7 @@ def get_sales_by_buyer_type():
             query = """
             SELECT 
                 buyer_type,
-                SUM(area_sold_sq_ft) as total_area_sold,
+                SUM(area_sold_sqft) as total_area_sold,
                 SUM(total_value_inr) as total_value
             FROM sales
             WHERE buyer_type IS NOT NULL AND buyer_type != ''
