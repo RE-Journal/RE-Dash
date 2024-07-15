@@ -10,7 +10,39 @@ def get_db_connection():
         database='u661384233_rejournal'
     )
 
+def get_security_deposit_data():
+    try:
+        connection = get_db_connection()
+        if connection.is_connected():
+            query = """
+            SELECT 
+                COALESCE(submarket, 'Unknown') AS SUBMARKET,
+                AVG(security_deposit_months) AS SECURITY_DEPOSIT
+            FROM leases
+            WHERE security_deposit_months IS NOT NULL
+                AND lease_start_year = 2024
+                AND lease_start_qtr IN (1, 2)
+            GROUP BY submarket
+            ORDER BY SECURITY_DEPOSIT DESC
+            """
+            
+            df = pd.read_sql(query, connection)
+            
+            if df.empty:
+                print("No data returned from the query.")
+                return []
+            
+            df['SECURITY_DEPOSIT'] = df['SECURITY_DEPOSIT'].round(1)
+            
+            return df.to_dict('records')
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+    finally:
+        if connection.is_connected():
+            connection.close()
 
+            
 def get_tenant_origin_share_data():
     try:
         connection = get_db_connection()
@@ -238,48 +270,6 @@ def get_area_leased_by_sector():
         if connection.is_connected():
             connection.close()
 
-def get_security_deposit_data(selected_quarters):
-    try:
-        connection = mysql.connector.connect(
-            host='193.203.184.1',
-            user='u661384233_dbuser',
-            password='Rejournal@123',
-            database='u661384233_rejournal'
-        )
-        if connection.is_connected():
-            quarters_condition = "AND CONCAT(lease_start_year, ' Q', lease_start_qtr) IN ({})".format(
-                ','.join(['%s'] * len(selected_quarters))
-            ) if selected_quarters else ""
-            
-            query = f"""
-            SELECT 
-                CONCAT(lease_start_year, ' Q', lease_start_qtr) AS Quarter,
-                COALESCE(submarket, 'Unknown') AS SUBMARKET,
-                AVG(security_deposit_months) AS SECURITY_DEPOSIT
-            FROM leases
-            WHERE security_deposit_months IS NOT NULL
-                {quarters_condition}
-            GROUP BY lease_start_year, lease_start_qtr, submarket
-            ORDER BY SECURITY_DEPOSIT DESC
-            """
-            
-            df = pd.read_sql(query, connection, params=selected_quarters)
-            
-            if df.empty:
-                print("No data returned from the query.")
-                return []
-            
-            df['SECURITY_DEPOSIT'] = df['SECURITY_DEPOSIT'].round(1)
-            
-            chart_data = df.groupby('SUBMARKET').agg({'SECURITY_DEPOSIT': 'mean'}).reset_index().to_dict('records')
-            
-            return chart_data
-    except Error as e:
-        print(f"Error: {e}")
-        return []
-    finally:
-        if connection.is_connected():
-            connection.close()
 
 
 
@@ -393,44 +383,7 @@ def get_qoq_leasing_data():
             connection.close()
             
         
-def get_security_deposit_data():
-    try:
-        connection = mysql.connector.connect(
-            host='193.203.184.1',
-            user='u661384233_dbuser',
-            password='Rejournal@123',
-            database='u661384233_rejournal'
-        )
-        if connection.is_connected():
-            query = """
-            SELECT 
-                COALESCE(submarket, 'Unknown') AS SUBMARKET,
-                AVG(security_deposit_months) AS SECURITY_DEPOSIT
-            FROM leases
-            WHERE security_deposit_months IS NOT NULL
-            GROUP BY submarket
-            ORDER BY SECURITY_DEPOSIT DESC
-            """
-            
-            df = pd.read_sql(query, connection)
-            
-            if df.empty:
-                print("No data returned from the query.")
-                return []
-            
-            # Round the security deposit to 1 decimal place
-            df['SECURITY_DEPOSIT'] = df['SECURITY_DEPOSIT'].round(1)
-            
-            # Convert DataFrame to list of dictionaries
-            chart_data = df.to_dict('records')
-            
-            return chart_data
-    except Error as e:
-        print(f"Error: {e}")
-        return []
-    finally:
-        if connection.is_connected():
-            connection.close()
+
             
 def get_leased_area_expiry_data():
     try:
@@ -749,19 +702,6 @@ def get_submarket_data():
         df['percentage'] = (df['total_area'] / df['total_area'].sum() * 100).round(2)
     return df
 
-def get_tenant_sector_data():
-    query = """
-    SELECT 
-        tenant_sector as label,
-        SUM(area_transcatedsq_ft) as total_area
-    FROM leases
-    WHERE lease_start_year = 2024 AND lease_start_qtr IN (1, 2)
-    GROUP BY tenant_sector
-    """
-    df = execute_query(query)
-    if df is not None:
-        df['percentage'] = (df['total_area'] / df['total_area'].sum() * 100).round(2)
-    return df
 
 def get_tenant_origin_data():
     query = """
