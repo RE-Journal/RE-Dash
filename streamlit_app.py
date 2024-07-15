@@ -5,30 +5,112 @@ import pandas as pd
 from io import BytesIO
 
 from database_operations import (
-    get_area_leased_by_sector,get_area_tenant_sector_share_data,
+    get_area_leased_by_sector, get_area_tenant_sector_share_data,
     get_security_deposit_data, get_leased_area_expiry_data, get_tenant_sector_share_data,
     get_area_leased_by_submarket, get_area_sold_by_quarter, get_sales_by_buyer_type,
     get_average_monthly_rental_trend, get_lease_start_rent_by_submarket,
     get_submarket_data, get_tenant_origin_data, get_quarterly_leasing_trend, 
-    get_area_sold_by_submarket,get_tenant_origin_share_data
+    get_area_sold_by_submarket, get_tenant_origin_share_data
 )
 
-st.set_page_config(layout="wide", page_title="RE Journal Sample Dashboards", page_icon="📊")
-
-# Custom CSS for styling
+# Main header styling
 st.markdown("""
 <style>
     .main .block-container { padding: 1rem 5rem; }
     .stApp { margin-top: -10px; }
     .stApp > header { background-color: transparent; }
-    .main-header { font-size: 2.5rem; font-weight: bold; text-align: center; margin-bottom: 2rem; }
-    .chart-container { border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .chart-title { font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem; color: #333; }
-    .stButton > button { width: 100%; border-radius: 5px; background-color: white; color: #3AC0B0; border: 1px solid #3AC0B0; padding: 0.5rem 1rem; font-weight: bold; transition: all 0.3s ease; }
-    .stButton > button:hover { background-color: #f0f0f0; border-color: #2E9A8C; }
-    .footer { text-align: center; color: gray; margin-top: 2rem; border-top: 1px solid #e0e0e0; padding-top: 1rem; }
+    .main-header { 
+        font-size: 3.5rem; 
+        font-weight: bold; 
+        text-align: center; 
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .main-header-text {
+        background-image: linear-gradient(to right, #38bdf8, #059669);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-left: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# Display the main title with icon
+st.markdown('<h1 class="main-header">🏢<span class="main-header-text">RE Journal Sample Dashboards</span></h1>', unsafe_allow_html=True)
+
+# Dashboard titles and section buttons styling
+st.markdown("""
+<style>
+    .dashboard-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 0.8rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .dashboard-title-text {
+        color: #333;
+        margin-left: 10px;
+    }
+            
+    .stButton > button {
+        width: 100%;
+        border-radius: 5px;
+        background-color: #f0f0f0;
+        color: #333333;
+        border: 1px solid #cccccc;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        font-size: 1.1rem !important; 
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #e0e0e0;
+    }
+    .stButton > button:focus {
+        box-shadow: none;
+    }
+    .chart-container { 
+        border: 0.5px solid #e0e0e0; 
+        border-radius: 10px; 
+        padding: 0.1rem; 
+        margin-bottom: 1rem; 
+        background-color: green; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    }
+     .stButton > button > div {
+        font-size: 1.3rem !important;
+    }
+    .chart-title { 
+        font-size: 1.2rem; 
+        font-weight: bold; 
+        text-align: center; 
+        margin-bottom: 1rem; 
+        color: #333; 
+    }
+    .footer { 
+        text-align: center; 
+        color: gray; 
+        margin-top: 2rem; 
+        border-top: 1px solid #e0e0e0; 
+        padding-top: 1rem; 
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Function to create dashboard titles
+def create_dashboard_title(icon, title):
+    st.markdown(f'<h2 class="dashboard-title">{icon}<span class="dashboard-title-text">{title}</span></h2>', unsafe_allow_html=True)
+
+# Function to create section buttons
+def create_section_button(icon, title):
+    return st.button(f"{icon} {title}", key=f"btn_{title.lower().replace(' ', '_')}", use_container_width=True)
 
 def create_centered_heading(title):
     st.markdown(f'<p class="chart-title">{title}</p>', unsafe_allow_html=True)
@@ -102,28 +184,40 @@ def area_leased_tenant_sector_share_chart():
         st.write("No data available for Share of AREA LEASED by TENANT SECTOR for 2024 H1")
 
 def tenant_sector_share_chart():
-    create_centered_heading("🏢 Tenant Sector share in Leasing (H124)")
+    create_centered_heading("🏢 Tenant Sector share in LEASING (H124)")
     data = get_tenant_sector_share_data()
     if data:
         df = pd.DataFrame(data)
         fig = px.bar(df, x='Quarter', y='Percentage', color='Tenant_Sector',
                      labels={'Percentage': 'Share of Area Leased (%)'},
                      text='Percentage')
-        fig.update_traces(texttemplate='%{text:.2f}%', textposition='inside')
+        fig.update_traces(texttemplate='%{text:.1f}%', textposition='inside')
         fig.update_layout(
-            xaxis_title="Year",
+            xaxis_title="Quarter",
             yaxis_title="Share of Area Leased (%)",
             height=500,
             barmode='stack',
             legend_title="TENANT SECTOR",
             font=dict(family="Arial", size=12),
-            yaxis=dict(tickformat='.0%', range=[0, 100],dtick=10,tickmode='linear'),
+            yaxis=dict(
+                tickformat='.0%', 
+                range=[0, 100],  # Set the range from 0 to 100
+                dtick=10,  # Set tick interval to 10
+                tickmode='linear'
+            ),
             legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
             margin=dict(l=50, r=150, t=50, b=50)
         )
+        
+        # Ensure the y-axis goes up to 100%
+        fig.update_yaxes(range=[0, 100])
+        
+        # Update hover template to show correct percentages
+        fig.update_traces(hovertemplate='%{y:.1f}%<extra></extra>')
+        
         config = {
             'displayModeBar': False,
-            'staticPlot': True
+            'staticPlot': False  # Changed to False to allow interactivity
         }
         st.plotly_chart(fig, use_container_width=True, config=config)
     else:
@@ -201,14 +295,14 @@ def lease_start_rent_by_submarket_chart():
         st.write("No data available for Lease Start Rent by Submarket for 2024 Q1-Q2")
 
 def area_leased_by_sector_chart():
-    create_centered_heading("🏢 Area Leased by Property Sector (H124)")
+    create_centered_heading("🏢 Area Leased by PROPERTY SECTOR (H124)")
     data = get_area_leased_by_sector()
     if data:
         df = pd.DataFrame(data)
         fig = go.Figure(data=[go.Pie(
             labels=df['Project_Category'],
             values=df['Area_Leased_Mln_Sqft'],
-            text=[f"{value:.2f}M ({percent:.1f}%)" for value, percent in zip(df['Area_Leased_Mln_Sqft'], df['Percentage'])],
+            text=[f"{percent:.1f}%" for percent in df['Percentage']],
             textposition='outside',
             hoverinfo='label+percent+text',
             textinfo='text'
@@ -229,16 +323,47 @@ def area_leased_by_sector_chart():
     else:
         st.write("No data available for Area Leased by Property Sector for 2024 H1")
 
-def leases_page():
-    st.markdown('<h2 class="main-header">📋 Leases Dashboard</h2>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3)
+def security_deposit_chart():
+    create_centered_heading("🔐 Average SECURITY DEPOSIT (months) by SUBMARKET (H124)")
+    data = get_security_deposit_data()
+    if data:
+        df = pd.DataFrame(data)
+        fig = px.bar(df, x='SUBMARKET', y='SECURITY_DEPOSIT',
+                     labels={'SECURITY_DEPOSIT': 'Average Security Deposit (months)'},
+                     text='SECURITY_DEPOSIT')
+        fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
+        fig.update_layout(
+            xaxis_title="Submarket",
+            yaxis_title="Average Security Deposit (months)",
+            height=500,
+            xaxis_tickangle=-45,
+            font=dict(family="Arial", size=12),
+            yaxis=dict(range=[0, max(df['SECURITY_DEPOSIT']) * 1.1]),
+            margin=dict(l=50, r=50, t=50, b=100)
+        )
+        config = {'displayModeBar': False, 'staticPlot': True}
+        st.plotly_chart(fig, use_container_width=True, config=config)
+    else:
+        st.write("No data available for Security Deposit by Submarket for 2024 H1")
+
+def leases_page():
+    create_dashboard_title("📋", "Leases Dashboard")
+
+    col1, col2 = st.columns(2)
     with col1:
         chart_with_border(area_leased_by_submarket_chart)
     with col2:
         chart_with_border(lambda: area_leased_tenant_sector_share_chart())
-    with col3:
+
+    col1, col2 = st.columns(2)
+    with col1:
+        chart_with_border(security_deposit_chart)
+    with col2:
         chart_with_border(lambda: tenant_origin_share_chart())
+
+    
+
 
     col1, col2 = st.columns(2)
     with col1:
@@ -327,7 +452,7 @@ def sales_by_buyer_type():
         st.write("No data available for Sales by Buyer Type")
 
 def sales_page():
-    st.markdown('<h2 class="main-header">💰 Sales Dashboard</h2>', unsafe_allow_html=True)
+    create_dashboard_title("💰", "Sales Dashboard")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -339,27 +464,57 @@ def sales_page():
     with col2:
         chart_with_border(sales_by_buyer_type)
 
-def sample_data():
-    st.markdown('<h2 class="main-header">📁 Sample Data</h2>', unsafe_allow_html=True)
+import pandas as pd
+import streamlit as st
+from io import BytesIO
 
-    def format_date_columns(df):
-        date_columns = df.select_dtypes(include=['datetime64']).columns
-        for col in date_columns:
-            df[col] = pd.to_datetime(df[col]).dt.strftime('%Y-%m-%d')
-        return df
+def clean_dataframe(df):
+    # Function to remove commas and convert to integer
+    def clean_year(x):
+        return int(str(x).replace(',', ''))
+    
+    # Clean Lease Start Year and Lease Expiry Year
+    if 'LEASE START YEAR' in df.columns:
+        df['LEASE START YEAR'] = df['LEASE START YEAR'].apply(clean_year)
+    if 'LEASE EXPIRY YEAR' in df.columns:
+        df['LEASE EXPIRY YEAR'] = df['LEASE EXPIRY YEAR'].apply(clean_year)
+    
+    # List of columns to convert to whole numbers
+    numeric_columns = [
+        'STAMP DUTY (INR)', 'REGSTN FEES (INR)', 'LEASE TENURE (MONTHS)',
+        'AREA TRANSCATED(sq ft)', 'AVERAGE MONTHLY RENT (INR Lumsum)',
+        'AVERAGE MONTHLY RENT (INR psf)', 'LEASABLE AREA (sq ft)',
+        'AVERAGE MONTHLY RENT ON LEASABLE (INR psf)',
+        'LEASE START RENT ON LEASABLE (INR psf)',
+        'LEASE END RENT ON LEASABLE (INR psf)', 'ANNUAL ESCALATION (%)',
+        'SECURITY DEPOSIT (INR)', 'SECURITY DEPOSIT (months)',
+        'CAM CHARGES (INR)', 'NO CAR PARKS'
+    ]
+    
+    # Convert numeric columns to integers
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = df[col].fillna(0).astype(int)
+    
+    return df
+
+
+def sample_data():
+    create_dashboard_title("📁", "Sample Data")
 
     def display_sample_data(df, title):
         st.subheader(title)
-        df_formatted = format_date_columns(df)
         st.dataframe(
-            df_formatted.head(10),
+            df.head(10),
             use_container_width=True,
             hide_index=True,
         )
         st.markdown(f"*Showing 10 out of {len(df)} rows*")
 
-    df_leases = pd.read_excel('Leases Sample Data Sheet.xlsx', parse_dates=True)
-    display_sample_data(df_leases, '📋 Leases Sample Data')
+    # Read and clean Leases data
+    df_leases = pd.read_excel('Leases Sample Data Sheet.xlsx', parse_dates=['REGSTN DATE', 'LEASE START DATE', 'LEASE EXPIRY DATE'])
+    df_leases_cleaned = clean_dataframe(df_leases)
+    display_sample_data(df_leases_cleaned, '📋 Leases Sample Data')
 
     df_projects = pd.read_excel('Projects Sample Data Sheet.xlsx', parse_dates=True)
     display_sample_data(df_projects, '🏗️ Projects Sample Data')
@@ -368,11 +523,11 @@ def sample_data():
     display_sample_data(df_sales, '💰 Sales Sample Data')
 
     def prepare_excel(df):
-        df_formatted = format_date_columns(df)
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df_formatted.to_excel(writer, index=False, sheet_name='Sheet1')
+            df.to_excel(writer, index=False, sheet_name='Sheet1')
         return output.getvalue()
+
 
     st.subheader("📥 Download Sample Datasets")
 
@@ -380,7 +535,7 @@ def sample_data():
     with col1:
         st.download_button(
             label="📋 Download Leases Data",
-            data=prepare_excel(df_leases),
+            data=prepare_excel(df_leases_cleaned),
             file_name="leases_sample_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
@@ -400,17 +555,16 @@ def sample_data():
         )
 
 def main():
-    st.markdown('<h1 class="main-header">🏢 RE Journal Sample Dashboard</h1>', unsafe_allow_html=True)
-       
+    
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("📋 Leases", use_container_width=True):
+        if st.button("📄 Leases", key="btn_leases", use_container_width=True):
             st.session_state.page = "leases"
     with col2:
-        if st.button("💰 Sales", use_container_width=True):
+        if st.button("💰 Sales", key="btn_sales", use_container_width=True):
             st.session_state.page = "sales"
     with col3:
-        if st.button("📁 Sample Data", use_container_width=True):
+        if st.button("📁 Sample Data", key="btn_sample_data", use_container_width=True):
             st.session_state.page = "sample_data"
     
     if 'page' not in st.session_state:
