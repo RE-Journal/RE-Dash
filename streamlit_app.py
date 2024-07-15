@@ -10,7 +10,7 @@ from database_operations import (
     get_security_deposit_data, get_leased_area_expiry_data, get_tenant_sector_share_data,
     get_area_leased_by_submarket, get_area_sold_by_quarter, get_sales_by_buyer_type,
     get_average_monthly_rental_trend, get_lease_start_rent_by_submarket,
-    get_submarket_data, get_tenant_origin_data, get_quarterly_leasing_trend, 
+    get_quarterly_leasing_trend,get_submarket_data,get_tenant_origin_data,
     get_area_sold_by_submarket, get_tenant_origin_share_data
 )
 
@@ -185,10 +185,16 @@ def area_leased_tenant_sector_share_chart():
         st.write("No data available for Share of AREA LEASED by TENANT SECTOR for 2024 H1")
 
 def tenant_sector_share_chart():
-    create_centered_heading("🏢 Tenant Sector share in LEASING (H124)")
+    create_centered_heading("🏢 Tenant Sector Share in LEASING (H124)")
     data = get_tenant_sector_share_data()
     if data:
         df = pd.DataFrame(data)
+        # Check if percentages are already between 0-100 or if they need scaling
+        max_percentage = df['Percentage'].max()
+        scale_factor = 100 if max_percentage < 1 else 1
+        
+        df['Percentage'] = df['Percentage'] * scale_factor
+        
         fig = px.bar(df, x='Quarter', y='Percentage', color='Tenant_Sector',
                      labels={'Percentage': 'Share of Area Leased (%)'},
                      text='Percentage')
@@ -201,26 +207,25 @@ def tenant_sector_share_chart():
             legend_title="TENANT SECTOR",
             font=dict(family="Arial", size=12),
             yaxis=dict(
-                tickformat='.0%', 
-                range=[0, 100],  # Set the range from 0 to 100
-                dtick=10,  # Set tick interval to 10
+                tickformat='.1f',
+                range=[0, 100],
+                dtick=10,
                 tickmode='linear'
             ),
             legend=dict(orientation="v", yanchor="top", y=1, xanchor="left", x=1.02),
             margin=dict(l=50, r=150, t=50, b=50)
         )
         
-        # Ensure the y-axis goes up to 100%
         fig.update_yaxes(range=[0, 100])
         
-        # Update hover template to show correct percentages
-        fig.update_traces(hovertemplate='%{y:.1f}%<extra></extra>')
+        fig.update_traces(hovertemplate='%{y:.2f}%<extra></extra>')
         
         config = {
             'displayModeBar': False,
-            'staticPlot': False  # Changed to False to allow interactivity
+            'staticPlot': False
         }
         st.plotly_chart(fig, use_container_width=True, config=config)
+        
     else:
         st.write("No data available for Tenant Sector share in Leasing for 2024 Q1-Q2")
 
@@ -250,12 +255,12 @@ def quarterly_leasing_trend_chart():
         st.write("No data available for Quarterly Leasing Trend for 2024 Q1-Q2")
 
 def average_monthly_rental_trend_chart():
-    create_centered_heading("📈 Average Monthly Rental (INR psf) Trend")
+    create_centered_heading("📈 Average Monthly Rental Trend (H124)")
     data = get_average_monthly_rental_trend()
     if data:
         df = pd.DataFrame(data)
         fig = px.bar(df, x='Quarter', y='Average_Rent',
-                     labels={'Average_Rent': 'Average Monthly Rental (INR psf)'},
+                     labels={'Average_Rent': 'Average Monthly Rent (INR psf)'},
                      text='Average_Rent')
         fig.update_traces(texttemplate='%{text:.0f}', textposition='outside')
         fig.update_layout(
@@ -275,7 +280,7 @@ def average_monthly_rental_trend_chart():
         st.write("No data available for Average Monthly Rental Trend for 2024 Q1-Q2")
 
 def lease_start_rent_by_submarket_chart():
-    create_centered_heading("🏙️ Average of LEASE START RENT ON LEASABLE (INR psf) by SUBMARKET and Quarter")
+    create_centered_heading("🏙️ Average LEASE START RENT ON LEASABLE by SUBMARKET and QUARTER")
     data = get_lease_start_rent_by_submarket()
     if data:
         df = pd.DataFrame(data)
@@ -305,7 +310,7 @@ def area_leased_by_sector_chart():
             values=df['Area_Leased_Mln_Sqft'],
             text=[f"{percent:.1f}%" for percent in df['Percentage']],
             textposition='outside',
-            hoverinfo='label+percent+text',
+            hoverinfo='label+percent',
             textinfo='text'
         )])
         fig.update_traces(textfont_size=12, pull=[0.05] * len(df))
@@ -330,10 +335,13 @@ def security_deposit_chart():
     data = get_security_deposit_data()
     if data:
         df = pd.DataFrame(data)
+        # Round the SECURITY_DEPOSIT to the nearest integer
+        df['SECURITY_DEPOSIT'] = df['SECURITY_DEPOSIT'].round().astype(int)
+        
         fig = px.bar(df, x='SUBMARKET', y='SECURITY_DEPOSIT',
                      labels={'SECURITY_DEPOSIT': 'Average Security Deposit (months)'},
                      text='SECURITY_DEPOSIT')
-        fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
+        fig.update_traces(texttemplate='%{text}', textposition='outside')
         fig.update_layout(
             xaxis_title="Submarket",
             yaxis_title="Average Security Deposit (months)",
