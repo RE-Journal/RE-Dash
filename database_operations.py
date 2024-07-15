@@ -180,7 +180,7 @@ def get_quarterly_leasing_trend():
             query = """
             SELECT 
                 CONCAT('2024 Qtr ', lease_start_qtr) AS Quarter,
-                SUM(area_transcatedsq_ft) / 1000000 AS Area_Leased_in_mln_sft
+                SUM(leasable_area_sq_ft) / 1000000 AS Area_Leased_in_mln_sft
             FROM leases
             WHERE lease_start_year = 2024
                 AND lease_start_qtr IN (1, 2)
