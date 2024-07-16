@@ -60,21 +60,24 @@ st.markdown("""
         margin-left: 10px;
     }
             
-    .stButton > button {
+    .stButton > button, .stButton > a {
         width: 100%;
-        border-radius: 5px;
-        background-color: #f0f0f0;
-        color: #333333;
-        border: 1px solid #cccccc;
-        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        background-color: white;
+        color: black;
+        border: 3px solid green;
+        padding: 0.7rem 1rem;
         font-weight: bold;
-        font-size: 1.1rem !important; 
+        font-size: 1.3rem !important; 
         transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
     }
-    .stButton > button:hover {
-        background-color: #e0e0e0;
+    .stButton > button:hover, .stButton > a:hover {
+        background-color: light grey !important;
     }
-    .stButton > button:focus {
+    .stButton > button:focus, .stButton > a:focus {
         box-shadow: none;
     }
     .chart-container { 
@@ -84,9 +87,6 @@ st.markdown("""
         margin-bottom: 1rem; 
         background-color: green; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-    }
-     .stButton > button > div {
-        font-size: 1.3rem !important;
     }
     .chart-title { 
         font-size: 1.2rem; 
@@ -101,6 +101,23 @@ st.markdown("""
         margin-top: 2rem; 
         border-top: 1px solid #e0e0e0; 
         padding-top: 1rem; 
+    }
+    .custom-link-button {
+        display: inline-block;
+        width: 100%;
+        border-radius: 8px;
+        background-color: white;
+        color: black;
+        border: 3px solid green;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        font-size: 1.3rem;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .custom-link-button:hover {
+        background-color: #f0f0f0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -473,20 +490,18 @@ def sales_page():
     with col2:
         chart_with_border(sales_by_buyer_type)
 
-import pandas as pd
-import streamlit as st
-from io import BytesIO
-
 def clean_dataframe(df):
     # Function to remove commas and convert to integer
     def clean_year(x):
+        if pd.isna(x):
+            return None
         return int(str(x).replace(',', ''))
     
     # Clean Lease Start Year and Lease Expiry Year
-    if 'LEASE START YEAR' in df.columns:
-        df['LEASE START YEAR'] = df['LEASE START YEAR'].apply(clean_year)
-    if 'LEASE EXPIRY YEAR' in df.columns:
-        df['LEASE EXPIRY YEAR'] = df['LEASE EXPIRY YEAR'].apply(clean_year)
+    year_columns = ['LEASE START YEAR', 'LEASE EXPIRY YEAR']
+    for col in year_columns:
+        if col in df.columns:
+            df[col] = df[col].apply(clean_year)
     
     # List of columns to convert to whole numbers
     numeric_columns = [
@@ -503,32 +518,57 @@ def clean_dataframe(df):
     # Convert numeric columns to integers
     for col in numeric_columns:
         if col in df.columns:
-            df[col] = df[col].fillna(0).astype(int)
+            df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', ''), errors='coerce').fillna(0).astype(int)
     
     return df
 
+def display_sample_data(df, title):
+    st.subheader(title)
+    formatted_df = df.copy()
+    for col in ['LEASE START YEAR', 'LEASE EXPIRY YEAR']:
+        if col in formatted_df.columns:
+            formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,}")
+    st.dataframe(
+        formatted_df.head(10),
+        use_container_width=True,
+        hide_index=True,
+    )
+    st.markdown(f"*Showing 10 out of {len(df)} rows*")
 
 def sample_data():
     create_dashboard_title("📁", "Sample Data")
 
     def display_sample_data(df, title):
         st.subheader(title)
+        
+        # Create a copy of the dataframe for display
+        display_df = df.copy()
+        
+        # Format integer columns to display without commas
+        int_columns = display_df.select_dtypes(include=['int64']).columns
+        for col in int_columns:
+            display_df[col] = display_df[col].apply(lambda x: f"{x:d}")
+        
+        # Format datetime columns to display only the date part
+        date_columns = display_df.select_dtypes(include=['datetime64']).columns
+        for col in date_columns:
+            display_df[col] = display_df[col].dt.strftime('%Y-%m-%d')
+        
         st.dataframe(
-            df.head(10),
+            display_df.head(10),
             use_container_width=True,
             hide_index=True,
         )
         st.markdown(f"*Showing 10 out of {len(df)} rows*")
 
-    # Read and clean Leases data
-    df_leases = pd.read_excel('Leases Sample Data Sheet.xlsx', parse_dates=['REGSTN DATE', 'LEASE START DATE', 'LEASE EXPIRY DATE'])
-    df_leases_cleaned = clean_dataframe(df_leases)
-    display_sample_data(df_leases_cleaned, '📋 Leases Sample Data')
+    # Read Leases data
+    df_leases = pd.read_excel('Leases Sample Data Sheet.xlsx', parse_dates=['LEASE EXPIRY DATE'])
+    display_sample_data(df_leases, '📋 Leases Sample Data')
 
-    df_projects = pd.read_excel('Projects Sample Data Sheet.xlsx', parse_dates=True)
+    df_projects = pd.read_excel('Projects Sample Data Sheet.xlsx')
     display_sample_data(df_projects, '🏗️ Projects Sample Data')
 
-    df_sales = pd.read_excel('Sales Sample Data Sheet.xlsx', parse_dates=True)
+    df_sales = pd.read_excel('Sales Sample Data Sheet.xlsx')
     display_sample_data(df_sales, '💰 Sales Sample Data')
 
     def prepare_excel(df):
@@ -537,14 +577,13 @@ def sample_data():
             df.to_excel(writer, index=False, sheet_name='Sheet1')
         return output.getvalue()
 
-
     st.subheader("📥 Download Sample Datasets")
 
     col1, col2, col3 = st.columns(3)
     with col1:
         st.download_button(
             label="📋 Download Leases Data",
-            data=prepare_excel(df_leases_cleaned),
+            data=prepare_excel(df_leases),
             file_name="leases_sample_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
@@ -562,7 +601,6 @@ def sample_data():
             file_name="sales_sample_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
-
 def main():
     
     col1, col2, col3 = st.columns(3)
@@ -590,7 +628,7 @@ def main():
 
     col1, col2, col3 = st.columns(3)
     with col2:
-        st.link_button("RE Journal Website", "https://www.rejournal.in/", use_container_width=True)  
+        st.markdown('<a href="https://www.rejournal.in/" target="_blank" class="custom-link-button">RE Journal Website</a>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
