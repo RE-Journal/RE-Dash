@@ -66,7 +66,7 @@ st.markdown("""
         background-color: white;
         color: black;
         border: 3px solid grey;
-        padding: 0.7rem 1rem;
+        padding: 0.4rem 1rem;
         font-weight: bold;
         font-size: 1.3rem !important; 
         transition: all 0.3s ease;
@@ -75,7 +75,7 @@ st.markdown("""
         text-align: center;
     }
     .stButton > button:hover, .stButton > a:hover {
-        background-color: light grey !important;
+        background-color: light gray !important;
     }
     .stButton > button:focus, .stButton > a:focus {
         box-shadow: none;
@@ -85,7 +85,7 @@ st.markdown("""
         border-radius: 10px; 
         padding: 0.01rem; 
         margin-bottom: 1rem; 
-        background-color: grey; 
+        background-color: light gray; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
     }
     .chart-title { 
@@ -108,7 +108,7 @@ st.markdown("""
         border-radius: 8px;
         background-color: white;
         color: black;
-        border: 3px solid green;
+        border: 1px solid light gray;
         padding: 0.5rem 1rem;
         font-weight: bold;
         font-size: 1.3rem;
