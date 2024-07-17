@@ -83,7 +83,7 @@ st.markdown("""
     .chart-container { 
         border: 0.5px solid #e0e0e0; 
         border-radius: 10px; 
-        padding: 0.1rem; 
+        padding: 0.01rem; 
         margin-bottom: 1rem; 
         background-color: grey; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
