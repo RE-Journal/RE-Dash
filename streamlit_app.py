@@ -65,7 +65,7 @@ st.markdown("""
         border-radius: 8px;
         background-color: white;
         color: black;
-        border: 3px solid green;
+        border: 3px solid grey;
         padding: 0.7rem 1rem;
         font-weight: bold;
         font-size: 1.3rem !important; 
@@ -85,7 +85,7 @@ st.markdown("""
         border-radius: 10px; 
         padding: 0.1rem; 
         margin-bottom: 1rem; 
-        background-color: green; 
+        background-color: grey; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
     }
     .chart-title { 
