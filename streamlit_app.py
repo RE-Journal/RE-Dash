@@ -521,22 +521,15 @@ def clean_dataframe(df):
             df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', ''), errors='coerce').fillna(0).astype(int)
     
     return df
-
-def display_sample_data(df, title):
-    st.subheader(title)
-    formatted_df = df.copy()
-    for col in ['LEASE START YEAR', 'LEASE EXPIRY YEAR']:
-        if col in formatted_df.columns:
-            formatted_df[col] = formatted_df[col].apply(lambda x: f"{x:,}")
-    st.dataframe(
-        formatted_df.head(10),
-        use_container_width=True,
-        hide_index=True,
-    )
-    st.markdown(f"*Showing 10 out of {len(df)} rows*")
+import numpy as np
 
 def sample_data():
     create_dashboard_title("📁", "Sample Data")
+
+    def safe_int_convert(x):
+        if pd.isna(x) or np.isinf(x):
+            return 0  # or any other value you prefer for NaN/inf
+        return int(round(x))
 
     def display_sample_data(df, title):
         st.subheader(title)
@@ -544,8 +537,13 @@ def sample_data():
         # Create a copy of the dataframe for display
         display_df = df.copy()
         
+        # Convert float and decimal columns to whole numbers, handling NaN and inf
+        float_columns = display_df.select_dtypes(include=['float64', 'float32']).columns
+        for col in float_columns:
+            display_df[col] = display_df[col].apply(safe_int_convert)
+        
         # Format integer columns to display without commas
-        int_columns = display_df.select_dtypes(include=['int64']).columns
+        int_columns = display_df.select_dtypes(include=['int64', 'int32']).columns
         for col in int_columns:
             display_df[col] = display_df[col].apply(lambda x: f"{x:d}")
         
@@ -561,17 +559,23 @@ def sample_data():
         )
         st.markdown(f"*Showing 10 out of {len(df)} rows*")
 
-    # Read Leases data
-    df_leases = pd.read_excel('Leases Sample Data Sheet.xlsx', parse_dates=['LEASE EXPIRY DATE'])
+    # Read and display Leases data
+    df_leases = pd.read_excel('Leases Sample Data Sheet.xlsx', parse_dates=['LEASE EXPIRY DATE', 'REGSTN DATE', 'LEASE START DATE'])
     display_sample_data(df_leases, '📋 Leases Sample Data')
 
+    # Read and display Projects data
     df_projects = pd.read_excel('Projects Sample Data Sheet.xlsx')
     display_sample_data(df_projects, '🏗️ Projects Sample Data')
 
+    # Read and display Sales data
     df_sales = pd.read_excel('Sales Sample Data Sheet.xlsx')
     display_sample_data(df_sales, '💰 Sales Sample Data')
 
     def prepare_excel(df):
+        # Convert float columns to integers for download, handling NaN and inf
+        for col in df.select_dtypes(include=['float64', 'float32']).columns:
+            df[col] = df[col].apply(safe_int_convert)
+        
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='Sheet1')
