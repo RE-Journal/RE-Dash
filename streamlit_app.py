@@ -374,7 +374,7 @@ def security_deposit_chart():
         st.write("No data available for Security Deposit by Submarket for 2024 H1")
 
 def leases_page():
-    create_dashboard_title("📋", "Leases Dashboard")
+    create_dashboard_title("📋", "Leases Dashboard (Mumbai) ")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -478,7 +478,7 @@ def sales_by_buyer_type():
         st.write("No data available for Sales by Buyer Type")
 
 def sales_page():
-    create_dashboard_title("💰", "Sales Dashboard")
+    create_dashboard_title("💰", "Sales Dashboard (Mumbai)")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -524,7 +524,7 @@ def clean_dataframe(df):
 import numpy as np
 
 def sample_data():
-    create_dashboard_title("📁", "Sample Data")
+    create_dashboard_title("📁", "Sample Data (Mumbai)")
 
     def safe_int_convert(x):
         if pd.isna(x) or np.isinf(x):
