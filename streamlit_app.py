@@ -256,7 +256,7 @@ def tenant_sector_share_chart():
         df = pd.DataFrame(data)
         
         # Ensure the order is maintained
-        df = df.sort_values(['Quarter', 'Order'],ascending=True)
+        df = df.sort_values(['Quarter'],ascending=True)
         
         # Create a custom order for Tenant_Sector based on the sorted data
         custom_order = df['Tenant_Sector'].unique()
