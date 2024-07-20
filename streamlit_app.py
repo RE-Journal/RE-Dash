@@ -14,6 +14,33 @@ from database_operations import (
     get_area_sold_by_submarket, get_tenant_origin_share_data
 )
 
+def display_submarket_definition():
+    st.markdown("""
+    <div class="submarket-definition">
+        <h4>Submarket Definition:</h4>
+        <p><strong>Prime Axis</strong>: Fort, Nariman Point, Cuffe Parade, Churchgate <strong>|</strong>
+        <strong>CentraZone</strong>: Worli, Mahalaxmi, Lower Parel, Prabhadevi, Parel, Dadar, Elphinstone, Byculla, Wadala <strong>|</strong>
+        <strong>BKC Nexus</strong>: Bandra Kurla Complex <strong>|</strong>
+        <strong>BKC Fringe</strong>: Bandra (E), Kalina, Santacruz, Kalanagar, Bandra (W), Kurla, CST Kalina Road <strong>|</strong>
+        <strong>North Vista</strong>: Andheri, Chakala, Jogeshwari, Vile Parle, Saki Naka, JB Nagar, Marol, Saki Vihar Road, Mahakali Caves Road <strong>|</strong>
+        <strong>West Haven</strong>: Goregaon, Dindoshi, Malad, Kandivali, Borivali, Oshiwara, Ram Mandir Road <strong>|</strong>
+        <strong>East Enclave</strong>: Powai, Vikhroli, LBS Marg, Ghatkopar, Vidyavihar, Mulund, Kanjurmarg, Sion, Chembur, Bhandup <strong>|</strong>
+        <strong>Thane Oasis</strong>: Thane, Wagle Estate, Ghodbunder Road, Kolshet, Hiranandani Estates, Panch Pakhadi, Dombivali <strong>|</strong>
+        <strong>Harbor City</strong>: Airoli, Mahape, Ghansoli, Koparkhairane, Rabale, Vashi, Kharghar, Turbhe, Sanpada, Juinagar, Nerul, Seawoods, Panvel, CBD Belapur</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def display_note(note):
+    st.markdown(f"""
+    <p style='font-size: 0.9em; color: #666; text-align: center;'>
+        <strong>Note: {note}</></strong>
+    </p>
+    """, unsafe_allow_html=True)
+
+def display_definition(title, definition):
+    st.markdown(f"<h4>{title}</h4>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 0.9em;'>{definition}</p>", unsafe_allow_html=True)
+
 # Main header styling
 st.markdown("""
 <style>
@@ -40,8 +67,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Display the main title with icon
-st.markdown('<h1 class="main-header">🏢<span class="main-header-text">RE Journal Sample Dashboard</span></h1>', unsafe_allow_html=True)
-
+st.markdown('<h1 class="main-header">🏢<span class="main-header-text">RE Journal Sample Dashboards</span></h1>', unsafe_allow_html=True)
 # Dashboard titles and section buttons styling
 st.markdown("""
 <style>
@@ -65,8 +91,8 @@ st.markdown("""
         border-radius: 8px;
         background-color: white;
         color: black;
-        border: 3px solid grey;
-        padding: 0.4rem 1rem;
+        border: 3px solid lightgrey;
+        padding: 0.7rem 1rem;
         font-weight: bold;
         font-size: 1.3rem !important; 
         transition: all 0.3s ease;
@@ -75,7 +101,7 @@ st.markdown("""
         text-align: center;
     }
     .stButton > button:hover, .stButton > a:hover {
-        background-color: light gray !important;
+        background-color: light grey !important;
     }
     .stButton > button:focus, .stButton > a:focus {
         box-shadow: none;
@@ -83,7 +109,7 @@ st.markdown("""
     .chart-container { 
         border: 0.5px solid #e0e0e0; 
         border-radius: 10px; 
-        padding: 0.01rem; 
+        padding: 0.1rem; 
         margin-bottom: 1rem; 
         background-color: light gray; 
         box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
@@ -108,7 +134,7 @@ st.markdown("""
         border-radius: 8px;
         background-color: white;
         color: black;
-        border: 1px solid light gray;
+        border: 3px solid lightgrey;
         padding: 0.5rem 1rem;
         font-weight: bold;
         font-size: 1.3rem;
@@ -117,7 +143,25 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     .custom-link-button:hover {
-        background-color: #f0f0f0;
+        background-color: white;
+    }
+            
+    button {
+            font-size : 20px;
+            }
+    .submarket-definition {
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 20px;
+        font-size: 0.9em;
+        line-height: 1.4;
+        background-color: #f9f9f9;
+    }
+    .submarket-definition h4 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: #333;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -178,10 +222,12 @@ def create_pie_chart(data, labels_col, values_col, percentage_col, title, height
     st.plotly_chart(fig, use_container_width=True, config=config)
 
 def tenant_origin_share_chart():
+    
     data = get_tenant_origin_share_data()
     if data:
         create_pie_chart(data, 'Tenant_Origin', 'Area_Leased_Mln_Sqft', 'Percentage', 
                          "🌍 Share of AREA LEASED by TENANT ORIGIN (H124)")
+        display_note("APAC indicates all Asia pacific countries excluding India")
     else:
         st.write("No data available for Share of AREA LEASED by TENANT ORIGIN for 2024 H1")
 
@@ -190,6 +236,8 @@ def area_leased_by_submarket_chart():
     if data:
         create_pie_chart(data, 'Submarket', 'Area_Leased_Mln_Sqft', 'Percentage', 
                          "🏙️ Share of AREA LEASED by SUBMARKET (H124)")
+        display_note("Total or gross leasing included transactions in Grade A office properties only.")
+
     else:
         st.write("No data available for Share of AREA LEASED by SUBMARKET for 2024 H1")
 
@@ -206,15 +254,18 @@ def tenant_sector_share_chart():
     data = get_tenant_sector_share_data()
     if data:
         df = pd.DataFrame(data)
-        # Check if percentages are already between 0-100 or if they need scaling
-        max_percentage = df['Percentage'].max()
-        scale_factor = 100 if max_percentage < 1 else 1
         
-        df['Percentage'] = df['Percentage'] * scale_factor
+        # Ensure the order is maintained
+        df = df.sort_values(['Quarter', 'Order'],ascending=True)
+        
+        # Create a custom order for Tenant_Sector based on the sorted data
+        custom_order = df['Tenant_Sector'].unique()
         
         fig = px.bar(df, x='Quarter', y='Percentage', color='Tenant_Sector',
                      labels={'Percentage': 'Share of Area Leased (%)'},
-                     text='Percentage')
+                     text='Percentage',
+                     category_orders={"Tenant_Sector": custom_order})
+        
         fig.update_traces(texttemplate='%{text:.1f}%', textposition='inside')
         fig.update_layout(
             xaxis_title="Quarter",
@@ -272,7 +323,7 @@ def quarterly_leasing_trend_chart():
         st.write("No data available for Quarterly Leasing Trend for 2024 Q1-Q2")
 
 def average_monthly_rental_trend_chart():
-    create_centered_heading("📈 Average Monthly Rental Trend (H124)")
+    create_centered_heading("📈 Average Monthly RENTAL TREND (H124)")
     data = get_average_monthly_rental_trend()
     if data:
         df = pd.DataFrame(data)
@@ -293,6 +344,7 @@ def average_monthly_rental_trend_chart():
             'staticPlot': True
         }
         st.plotly_chart(fig, use_container_width=True, config=config)
+        display_note("Average monthly rental indicates city level simple average of rents for the transactions seen in the respective quarters")
     else:
         st.write("No data available for Average Monthly Rental Trend for 2024 Q1-Q2")
 
@@ -314,6 +366,7 @@ def lease_start_rent_by_submarket_chart():
         )
         config = {'displayModeBar': False, 'staticPlot': True}
         st.plotly_chart(fig, use_container_width=True, config=config)
+        display_note("Lease start rent at submarket indicates monthly simple average of rents for the transactions seen in the respective quarters.")
     else:
         st.write("No data available for Lease Start Rent by Submarket for 2024 Q1-Q2")
 
@@ -374,13 +427,15 @@ def security_deposit_chart():
         st.write("No data available for Security Deposit by Submarket for 2024 H1")
 
 def leases_page():
-    create_dashboard_title("📋", "Leases Dashboard (Mumbai) ")
+    create_dashboard_title("📋", "Leases Dashboard (Mumbai Office)")
 
     col1, col2 = st.columns(2)
     with col1:
         chart_with_border(area_leased_by_submarket_chart)
     with col2:
         chart_with_border(lambda: area_leased_tenant_sector_share_chart())
+
+    display_submarket_definition()
 
     col1, col2 = st.columns(2)
     with col1:
@@ -478,7 +533,7 @@ def sales_by_buyer_type():
         st.write("No data available for Sales by Buyer Type")
 
 def sales_page():
-    create_dashboard_title("💰", "Sales Dashboard (Mumbai)")
+    create_dashboard_title("💰", "Sales Dashboard (Mumbai Office)")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -524,7 +579,7 @@ def clean_dataframe(df):
 import numpy as np
 
 def sample_data():
-    create_dashboard_title("📁", "Sample Data (Mumbai)")
+    create_dashboard_title("📁", "Sample Data (Mumbai Office)")
 
     def safe_int_convert(x):
         if pd.isna(x) or np.isinf(x):
