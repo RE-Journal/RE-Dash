@@ -67,7 +67,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Display the main title with icon
-st.markdown('<h1 class="main-header">🏢<span class="main-header-text">RE Journal Sample Dashboards</span></h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🏢<span class="main-header-text">RE Journal Sample Dashboard</span></h1>', unsafe_allow_html=True)
 # Dashboard titles and section buttons styling
 st.markdown("""
 <style>
