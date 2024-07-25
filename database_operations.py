@@ -212,16 +212,16 @@ def get_lease_start_rent_by_submarket():
         if connection.is_connected():
             query = """
             SELECT 
-                submarket AS SUBMARKET,
-                CONCAT(lease_start_qtr, ,lease_start_year) AS Quarter,
-                AVG(lease_start_rent_on_leasable_inr_psf) AS Average_Rent
-            FROM leases
-            WHERE submarket IS NOT NULL 
-                AND lease_start_rent_on_leasable_inr_psf IS NOT NULL
-                AND lease_start_year = 2024
-                AND lease_start_qtr IN (1, 2)
-            GROUP BY submarket, lease_start_year, lease_start_qtr
-            ORDER BY submarket, lease_start_year, lease_start_qtr
+    submarket AS SUBMARKET,
+    CONCAT(lease_start_qtr, ' ', lease_start_year) AS Quarter,
+    AVG(lease_start_rent_on_leasable_inr_psf) AS Average_Rent
+FROM leases
+WHERE submarket IS NOT NULL 
+    AND lease_start_rent_on_leasable_inr_psf IS NOT NULL
+    AND lease_start_year = 2024
+    AND lease_start_qtr IN (1, 2)
+GROUP BY submarket, lease_start_year, lease_start_qtr
+ORDER BY submarket, lease_start_year, lease_start_qtr
             """
             
             df = pd.read_sql(query, connection)
