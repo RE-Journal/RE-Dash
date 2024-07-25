@@ -213,7 +213,7 @@ def get_lease_start_rent_by_submarket():
             query = """
             SELECT 
                 submarket AS SUBMARKET,
-                CONCAT(lease_start_year, ' Q', lease_start_qtr) AS Quarter,
+                CONCAT(lease_start_year, lease_start_qtr) AS Quarter,
                 AVG(lease_start_rent_on_leasable_inr_psf) AS Average_Rent
             FROM leases
             WHERE submarket IS NOT NULL 
