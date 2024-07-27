@@ -50,26 +50,44 @@ st.markdown("""
     .stApp { margin-top: -10px; }
     .stApp > header { background-color: transparent; }
     .main-header { 
-        font-size: 3.5rem; 
-        font-weight: bold; 
-        text-align: center; 
+        text-align: center;
         margin-bottom: 2rem;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    }
+    .main-header-logo {
+        height: 70px;
+        margin-bottom: 10px;
     }
     .main-header-text {
         background-image: linear-gradient(to right, #38bdf8, #059669);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
-        margin-left: 10px;
+        font-size: 3rem;
+        font-weight: bold;
+        display: block;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Display the main title with icon
-st.markdown('<h1 class="main-header">🏢<span class="main-header-text">RE Journal Sample Dashboard</span></h1>', unsafe_allow_html=True)
+
+import base64
+
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+your_base64_encoded_image = get_base64_of_bin_file('logo.png')
+
+st.markdown('''
+    <div class="main-header">
+        <img src="data:image/png;base64,{}" alt="RE Journal Logo" class="main-header-logo">
+        <span class="main-header-text">Sample Dashboard</span>
+    </div>
+'''.format(your_base64_encoded_image), unsafe_allow_html=True)
+
+
 # Dashboard titles and section buttons styling
 st.markdown("""
 <style>
